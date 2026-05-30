@@ -49,6 +49,12 @@ RSpec.describe 'bin/cursed_demo' do
     end
   end
 
+  it 'MenuView does not start with the title separator highlighted' do
+    menu = CursedDemo::MenuView.new(app)
+    list = menu.instance_variable_get(:@list)
+    expect(list.selected_item).to be_a(Cursed::Widgets::ActionItem)
+  end
+
   describe 'FormView event wiring' do
     subject(:form) { CursedDemo::FormView.new(app).tap { |v| v.activate(app) } }
 

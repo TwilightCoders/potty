@@ -10,7 +10,8 @@ module Cursed
     # Scrollable list widget with heterogeneous items.
     # Emits :select(item) on cursor move and :activate(item) on Enter.
     class List < Base
-      attr_accessor :items, :on_select, :on_activate
+      attr_reader :items
+      attr_accessor :on_select, :on_activate
 
       def initialize(app)
         super
@@ -19,6 +20,20 @@ module Cursed
         @scroll_offset = 0
         @on_select = nil
         @on_activate = nil
+      end
+
+      # Replacing the items resets the cursor to the first *selectable*
+      # item (skipping leading separators/disabled rows) so the initial
+      # highlight never lands on something you can't select.
+      def items=(list)
+        @items = list || []
+        @selected_index = first_selectable_index
+        @scroll_offset = 0
+      end
+
+      # The currently highlighted item (nil if the list is empty).
+      def selected_item
+        @items[@selected_index]
       end
 
       def can_focus?
@@ -138,6 +153,8 @@ module Cursed
       end
 
       def adjust_scroll
+        return unless @rect # keys can arrive before the first layout
+
         visible_height = @rect.height - 2
 
         # Scroll down if needed
@@ -164,6 +181,11 @@ module Cursed
 
       def current_item
         @items[@selected_index] if @selected_index < @items.size
+      end
+
+      # First non-disabled index, or 0 if there is no selectable item.
+      def first_selectable_index
+        @items.index { |item| !item.disabled? } || 0
       end
     end
   end
