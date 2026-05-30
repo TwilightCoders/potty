@@ -1,5 +1,8 @@
 # potty
 
+[![CI](https://github.com/TwilightCoders/potty/actions/workflows/ci.yml/badge.svg)](https://github.com/TwilightCoders/potty/actions/workflows/ci.yml)
+[![Gem Version](https://badge.fury.io/rb/potty.svg)](https://rubygems.org/gems/potty)
+
 A curses-based terminal UI framework for Ruby. Build full-screen TUIs from a
 tree of composable widgets, with view-stack navigation, a focus model, theming,
 and frame-based animation.
