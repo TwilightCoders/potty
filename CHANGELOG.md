@@ -28,6 +28,19 @@ on [Keep a Changelog](https://keepachangelog.com/), and the project follows
 - `RadioGroup#cursor_value` (the highlighted option, for one-shot choosers).
 - `Application.new(out:, listen:, input:)` — redirect inline output, enable
   listening, and inject the input IO (testability/piping).
+- Second demo: `potty_inline_demo` (TTY/inline) alongside `potty_demo` (curses).
+
+### Changed
+- **`Theme` is now pure data** (no curses) — `style`/`[]`/`attr` all return a
+  `Style` (symbolic colours + attributes), resolved per surface. This is what
+  lets every widget render in *either* mode (curses pair or ANSI SGR) with no
+  per-widget special-casing. Code that drew straight to a curses window with
+  `theme[:x]` must now draw via the surface (it resolves the Style).
+- `View#spacing` is overridable; `Enter` advances focus like `Tab` when the
+  focused widget doesn't consume it (form flow).
+- Internal consolidation: `TextInput` and the list `InputItem` now share a
+  `Potty::LineEditor`; dead `Layout.split_horizontal`/`fill` and the unused
+  `WindowManager` sub-window API removed.
 
 ### CI
 - GitHub Actions running the suite on Ruby 3.1–3.4.
