@@ -3,6 +3,7 @@
 require_relative 'cursed/version'
 require_relative 'cursed/keys'
 require_relative 'cursed/events'
+require_relative 'cursed/style'
 require_relative 'cursed/application'
 require_relative 'cursed/theme'
 require_relative 'cursed/layout'
