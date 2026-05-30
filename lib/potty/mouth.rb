@@ -126,12 +126,14 @@ module Potty
         end
 
         def handle_key(ch)
-          return true if super
-          return false unless Potty::Keys.enter?(ch)
-
-          @result = @field.text
-          app.quit
-          true
+          # Intercept Enter before super (which would otherwise advance focus)
+          # — a single-field prompt submits on Enter.
+          if Potty::Keys.enter?(ch)
+            @result = @field.text
+            app.quit
+            return true
+          end
+          super
         end
 
         def handle_escape

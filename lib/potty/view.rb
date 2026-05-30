@@ -70,9 +70,13 @@ module Potty
       # Delegate to focused widget first
       return true if focused_widget&.handle_key(ch)
 
-      # Handle view-level keys
+      # Handle view-level keys. Enter advances focus like Tab when the
+      # focused widget didn't consume it — so a form flows field -> field ->
+      # button (where the button finally consumes Enter and fires). A view
+      # that wants Enter for itself (e.g. a prompt that submits) intercepts it
+      # before delegating to super.
       case ch
-      when Keys::TAB
+      when Keys::TAB, *Keys::ENTERS
         cycle_focus(1)
         true
       when Keys::SHIFT_TAB

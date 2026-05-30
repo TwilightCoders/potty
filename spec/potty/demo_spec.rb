@@ -56,6 +56,13 @@ RSpec.describe 'bin/potty_demo' do
       expect(ivar(:@header).text).to include('meta')
     end
 
+    it 'advances focus when Enter is pressed in the Title field' do
+      expect(ivar(:@title_in).focused).to be(true)
+      dash.handle_key(Potty::Keys::ENTER)
+      expect(ivar(:@title_in).focused).to be(false)
+      expect(ivar(:@style_rg).focused).to be(true) # next focusable
+    end
+
     it 'restyles BOTH panels when you Tab to the Border radio and pick one' do
       dash.handle_key(Potty::Keys::TAB)   # title -> radio
       dash.handle_key(Potty::Keys::DOWN)  # -> :rounded
