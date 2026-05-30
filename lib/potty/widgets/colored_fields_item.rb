@@ -38,7 +38,7 @@ module Potty
           text = text[0, remaining]
 
           if color
-            attr = bold ? theme.attr(color, bold: true) : theme[color]
+            attr = bold ? theme.style(color, bold: true) : theme.style(color)
             window.attron(attr) do
               window.addstr(text)
             end

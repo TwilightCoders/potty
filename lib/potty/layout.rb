@@ -20,28 +20,5 @@ module Potty
         rect
       end
     end
-
-    # Horizontal split
-    def self.split_horizontal(container_rect, ratio: 0.5)
-      split_x = container_rect.x + (container_rect.width * ratio).to_i
-      left = Rect.new(
-        container_rect.x,
-        container_rect.y,
-        split_x - container_rect.x,
-        container_rect.height
-      )
-      right = Rect.new(
-        split_x,
-        container_rect.y,
-        container_rect.width - (split_x - container_rect.x),
-        container_rect.height
-      )
-      [left, right]
-    end
-
-    # Fill available space
-    def self.fill(container_rect)
-      container_rect.dup
-    end
   end
 end

@@ -43,7 +43,7 @@ module Potty
         return unless @visible && @rect
 
         text = "[ #{@label} ]"[0, @rect.width]
-        attr = @focused ? theme.attr(:selected, bold: true) : theme[@color]
+        attr = @focused ? theme.style(:selected, bold: true) : theme.style(@color)
         window.setpos(@rect.y, @rect.x)
         window.attron(attr) { window.addstr(text) }
       end

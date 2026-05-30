@@ -63,7 +63,7 @@ module Potty
 
           mark = selected?(opt[:value]) ? "[\u2713]" : "[ ]"
           on_cursor = @focused && i == @cursor
-          attr = on_cursor ? theme.attr(:selected, bold: true) : theme[:normal]
+          attr = on_cursor ? theme.style(:selected, bold: true) : theme.style(:normal)
           window.setpos(@rect.y + i, @rect.x)
           window.attron(attr) { window.addstr("#{mark} #{opt[:label]}"[0, @rect.width]) }
         end

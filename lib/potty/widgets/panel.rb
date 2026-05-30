@@ -41,7 +41,7 @@ module Potty
       def render(window)
         return unless @visible && @rect
 
-        Border.draw(window, @rect, style: @style, attr: theme[@color], title: @title)
+        Border.draw(window, @rect, style: @style, attr: theme.style(@color), title: @title)
         super # render children inside the frame
       end
     end

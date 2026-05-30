@@ -74,7 +74,7 @@ module Potty
 
         text = @format.call(remaining).to_s[0, @rect.width]
         window.setpos(@rect.y, @rect.x)
-        window.attron(theme[:warning]) { window.addstr(text) }
+        window.attron(theme.style(:warning)) { window.addstr(text) }
       end
     end
   end

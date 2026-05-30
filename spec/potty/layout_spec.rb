@@ -18,25 +18,11 @@ RSpec.describe Potty::Layout do
       expect(rects.map(&:height)).to eq([2, 3])
       expect(rects.map(&:width)).to all(eq(20))
     end
-  end
 
-  describe '.split_horizontal' do
-    it 'splits a rect by ratio' do
-      container = Potty::Layout::Rect.new(0, 0, 100, 10)
-      left, right = described_class.split_horizontal(container, ratio: 0.3)
-
-      expect(left.width).to eq(30)
-      expect(right.x).to eq(30)
-      expect(right.width).to eq(70)
-    end
-  end
-
-  describe '.fill' do
-    it 'returns a copy of the container' do
-      container = Potty::Layout::Rect.new(1, 2, 3, 4)
-      filled = described_class.fill(container)
-      expect(filled).to eq(container)
-      expect(filled).not_to equal(container)
+    it 'packs flush with spacing 0' do
+      container = Potty::Layout::Rect.new(0, 0, 20, 100)
+      rects = described_class.stack(container, [widget_class.new(1), widget_class.new(1)], spacing: 0)
+      expect(rects.map(&:y)).to eq([0, 1])
     end
   end
 end

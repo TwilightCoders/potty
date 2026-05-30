@@ -45,10 +45,10 @@ module Potty
         # Show message if present
         if @message
           attr = case @type
-                 when :success then theme[:success]
-                 when :error then theme[:error]
-                 when :warning then theme[:warning]
-                 else theme[:info]
+                 when :success then theme.style(:success)
+                 when :error then theme.style(:error)
+                 when :warning then theme.style(:warning)
+                 else theme.style(:info)
                  end
 
           window.setpos(@rect.y, @rect.x)

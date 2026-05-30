@@ -1,6 +1,5 @@
 # frozen_string_literal: true
 
-require 'curses'
 require_relative 'base'
 require_relative '../keys'
 

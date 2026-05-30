@@ -55,7 +55,7 @@ module Potty
         # Show empty message if no items
         if @items.empty?
           window.setpos(@rect.y + 1, @rect.x + 2)
-          window.attron(theme[:dim]) do
+          window.attron(theme.style(:dim)) do
             window.addstr("No items")
           end
           return
@@ -94,7 +94,7 @@ module Potty
       private
 
       def draw_border(window)
-        Border.draw(window, @rect, attr: theme[:normal])
+        Border.draw(window, @rect, attr: theme.style(:normal))
       end
 
       def render_item(window, item, index, y, x)
@@ -105,7 +105,7 @@ module Potty
         window.setpos(y, x)
 
         # Selection prefix
-        prefix_attr = is_selected && @focused ? theme.attr(:selected, bold: true) : theme[:normal]
+        prefix_attr = is_selected && @focused ? theme.style(:selected, bold: true) : theme.style(:normal)
         window.attron(prefix_attr) do
           prefix = is_selected ? "\u2192 " : "  "
           window.addstr(prefix)
@@ -118,13 +118,13 @@ module Potty
 
         # Default single-color rendering
         attr = if is_selected && @focused
-                 theme.attr(:selected, bold: true)
+                 theme.style(:selected, bold: true)
                elsif is_disabled
-                 theme[:dim]
+                 theme.style(:dim)
                elsif item.color
-                 theme[item.color]
+                 theme.style(item.color)
                else
-                 theme[:normal]
+                 theme.style(:normal)
                end
 
         window.attron(attr) do

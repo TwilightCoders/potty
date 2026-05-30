@@ -23,7 +23,7 @@ module Potty
         return unless @rect
 
         window.setpos(@rect.y, @rect.x)
-        window.attron(theme[:status]) do
+        window.attron(theme.style(:status)) do
           # Clear line with background color
           window.addstr(" " * @rect.width)
 
