@@ -1,7 +1,9 @@
 # frozen_string_literal: true
 
+require 'io/console'
 require_relative '../surface'
 require_relative '../ansi'
+require_relative '../input/decoder'
 
 module Potty
   module Surfaces
@@ -16,16 +18,21 @@ module Potty
     # then cursor back to the top). finalize freezes the last frame and drops
     # the cursor to the line below so the next prompt lands cleanly.
     class InlineSurface < Surface
-      def initialize(theme:, lines: nil, tick_interval: 40, out: $stdout)
+      def initialize(theme:, lines: nil, tick_interval: 40, out: $stdout, listen: false, input: $stdin)
         super()
         @theme = theme
         @rows = [lines || 1, 1].max
         @tick_interval = tick_interval
         @out = out
+        @listen = listen
+        @input = input
         @cols = detect_cols
         @cursor = [0, 0]
         @cur_style = nil
         @primed = false
+        @raw = false
+        @decoder = (Input::Decoder.new if listen)
+        @queue = []
         erase
       end
 
@@ -36,10 +43,12 @@ module Potty
       def start
         @out.write("\e[?25l") # hide cursor
         @out.flush
+        enter_raw if @listen
       end
 
       def finalize
         present                 # freeze the final frame
+        restore_cooked          # before the newline, so it lands at column 0
         @out.write("\n")        # drop below the region
         @out.write("\e[?25h")   # restore cursor
         @out.flush
@@ -89,14 +98,55 @@ module Potty
         @out.flush
       end
 
-      # Inline mode ignores input; sleeping here gives the loop its tick
-      # cadence. Terminal stays cooked, so Ctrl-C raises Interrupt normally.
+      # In listen mode: drain raw stdin (non-blocking, waiting up to one tick
+      # for the first byte), decode to Keys codes, and return them one per
+      # call (queueing the rest). Without listening (or off a real TTY): just
+      # pace the loop and return nil, leaving input alone. Ctrl-C arrives as a
+      # byte the decoder passes through as Keys::CTRL_C; the event loop raises.
       def read_key
-        sleep(@tick_interval / 1000.0) if @tick_interval
-        nil
+        return @queue.shift unless @queue.empty?
+
+        if @raw
+          fill_queue
+          @queue.shift
+        else
+          sleep(@tick_interval / 1000.0) if @tick_interval
+          nil
+        end
       end
 
       private
+
+      def enter_raw
+        return unless @input.respond_to?(:raw!) && tty_input?
+
+        @input.raw!     # no echo, no canonical, no signal processing
+        @raw = true
+      end
+
+      def restore_cooked
+        return unless @raw
+
+        @input.cooked!
+        @raw = false
+      end
+
+      def tty_input?
+        @input.respond_to?(:tty?) && @input.tty?
+      end
+
+      def fill_queue
+        seconds = (@tick_interval || 40) / 1000.0
+        bytes = +''
+        if IO.select([@input], nil, nil, seconds)
+          begin
+            loop { bytes << @input.read_nonblock(256) }
+          rescue IO::WaitReadable, EOFError
+            # drained for now
+          end
+        end
+        @queue.concat(@decoder.feed(bytes, Time.now))
+      end
 
       def render_row(cells)
         last = cells.rindex { |ch, _| ch != ' ' } || -1

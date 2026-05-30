@@ -41,6 +41,14 @@ module Potty
         @selected
       end
 
+      # The value under the cursor (the highlighted row), which may differ
+      # from the committed selection while navigating. Choosers commit this
+      # on Enter.
+      def cursor_value
+        opt = @options[@cursor]
+        opt && opt[:value]
+      end
+
       def selected=(value)
         idx = index_of(value)
         return unless idx

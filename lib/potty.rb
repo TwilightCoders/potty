@@ -6,7 +6,6 @@ require_relative 'potty/events'
 require_relative 'potty/style'
 require_relative 'potty/ansi'
 require_relative 'potty/input/decoder'
-require_relative 'potty/mouth'
 require_relative 'potty/application'
 require_relative 'potty/theme'
 require_relative 'potty/layout'
@@ -33,6 +32,8 @@ require_relative 'potty/widgets/spinner'
 require_relative 'potty/sprite'
 require_relative 'potty/animator'
 require_relative 'potty/sprites/sample'
+# Mouth's prompt views subclass Potty::View, so load it after the framework.
+require_relative 'potty/mouth'
 
 module Potty
 end
