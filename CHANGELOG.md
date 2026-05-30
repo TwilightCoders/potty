@@ -7,14 +7,15 @@ on [Keep a Changelog](https://keepachangelog.com/), and the project follows
 ## [0.0.2] - 2026-05-30
 
 ### Added
-- `Potty::Mouth` — potty's inline voice (a mouth speaks but doesn't listen,
-  which is exactly inline mode). Two sizes:
-  - `Mouth.say(text, color)` — a styled one-liner with no Application; drops
-    colour when output isn't a TTY so logs stay clean. (+ `Mouth.bleep`.)
-  - `Mouth.run(lines:) { |app| view }` — a live, redrawing inline region;
-    sugar over `Application.new(mode: :inline)` (which remains the engine).
+- `Potty::Mouth` — batteries-included inline helpers built on
+  `Application.new(mode: :inline)` (a convenience layer, not an Application
+  facade). `Mouth.say(text, color)` prints a styled line with no app and
+  drops colour when output isn't a TTY so logs stay clean. (+ `Mouth.bleep`.)
+  Input helpers (`ask`/`confirm`/`choose`) land with listen mode.
 - `Potty::Ansi` — the symbolic-colour → SGR mapping, now shared by
   `InlineSurface` and `Mouth` (single source of truth).
+- `Potty::Input::Decoder` — raw byte stream → `Keys` codes (CSI/SS3 escape
+  sequences + bare-ESC timeout); the core for inline listen mode.
 - `Application.new(out:)` — redirect inline output (testability/piping).
 
 ### CI

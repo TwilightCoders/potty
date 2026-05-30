@@ -5,35 +5,19 @@ require_relative 'theme'
 require_relative 'ansi'
 
 module Potty
-  # potty's inline voice. A mouth *speaks but doesn't listen* — which is
-  # exactly what inline mode is (output-only, no input), so this is the front
-  # door to inline rendering, in two sizes:
+  # potty's batteries-included inline helpers — quick terminal I/O that hides
+  # the Application/View machinery and hands you back a value:
   #
-  #   # one utterance — a styled line, no app:
-  #   Potty::Mouth.say("deploying…", :info)
+  #   Potty::Mouth.say("deploying…", :info)        # styled output, no app
+  #   name = Potty::Mouth.ask("Your name?")        # (with listen mode) -> String
+  #   ok   = Potty::Mouth.confirm("Proceed?")      # -> true/false
   #
-  #   # a sustained conversation — a live, redrawing region of widgets:
-  #   Potty::Mouth.run(lines: 2, tick_interval: 40) do |app|
-  #     DaemonRestartView.new(app, event_queue: q)   # quits itself when done
-  #   end
-  #
-  # `run` is sugar over Application.new(mode: :inline) — Application stays the
-  # engine for both screen modes; Mouth is just the inline half with a name
-  # that fits. Colour is dropped when output isn't a TTY, so logs stay clean.
+  # This is a convenience layer *built on* Application.new(mode: :inline), not
+  # a second way to run views — to run your own inline View, use the inline
+  # Application directly. Colour is dropped when output isn't a TTY, so logs
+  # stay clean.
   module Mouth
     module_function
-
-    # Run a live inline region: build an inline Application, hand it to the
-    # block to construct the root view, and run until the view calls quit.
-    # Returns the view (so the caller can read its final state). The block
-    # receives the Application so the view can be built against it.
-    def run(lines: 1, tick_interval: 40, theme: nil, out: $stdout)
-      app = Application.new(mode: :inline, lines: lines, theme: theme, out: out)
-      app.tick_interval = tick_interval
-      view = yield(app)
-      app.run(view)
-      view
-    end
 
     # Print one styled line. `color` is a Theme palette name (:info, :success,
     # :error, :warning, :dim, …); unknown names fall back to :normal.
