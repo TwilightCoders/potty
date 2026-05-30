@@ -4,7 +4,7 @@ module Cursed
   module Widgets
     # High-fidelity progress bar using Unicode block elements
     # Provides 8x more granularity than simple filled/empty characters
-    # Pure string rendering - works in both curses and TTY contexts
+    # Pure string rendering - usable on a curses window or plain stdout
     class ProgressBar
       BLOCKS = [
         ' ',

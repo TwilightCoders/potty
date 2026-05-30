@@ -9,7 +9,7 @@ Gem::Specification.new do |spec|
   spec.email         = ['info@twilightcoders.net']
 
   spec.summary       = 'A curses-based terminal UI framework for Ruby'
-  spec.description   = 'Provides views, widgets, layout, and theming for building curses TUI applications. Includes legacy TTY menu components.'
+  spec.description   = 'Provides views, widgets, layout, theming, and frame-based animation for building curses TUI applications.'
   spec.homepage      = 'https://github.com/TwilightCoders/cursed'
   spec.license       = 'MIT'
   spec.required_ruby_version = '>= 2.7.0'
