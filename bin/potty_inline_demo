@@ -1,0 +1,74 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# potty_inline_demo - the TTY / inline half of potty: rendering and
+# interaction that stay in your terminal's normal flow (no full-screen
+# takeover). Run it in a real terminal:
+#
+#   bin/potty_inline_demo     (from a checkout)
+#   potty_inline_demo         (when the gem is installed)
+#
+# The curses (full-screen) counterpart is `potty_demo`.
+
+lib = File.expand_path('../lib', __dir__)
+$LOAD_PATH.unshift(lib) if File.directory?(lib) && !$LOAD_PATH.include?(lib)
+
+require 'potty'
+
+module PottyInlineDemo
+  # A short live "deploy": two spinners that resolve, redrawn in place under
+  # the cursor (no screen takeover). Quits itself when finished.
+  class DeployView < Potty::View
+    def build_layout
+      @label  = Potty::Widgets::Label.new(app, text: 'Deploying (inline, in place):', color: :info)
+      @build  = Potty::Widgets::Spinner.new(app, label: 'building assets')
+      @upload = Potty::Widgets::Spinner.new(app, label: 'uploading bundle')
+      @widgets = [@label, @build, @upload]
+    end
+
+    def tick(now)
+      @start ||= now
+      super
+      elapsed = now - @start
+      @build.complete!(:success)  if elapsed > 1.0 && @build.active?
+      @upload.complete!(:success) if elapsed > 2.0 && @upload.active?
+      app.quit if elapsed > 2.6
+    end
+  end
+
+  module_function
+
+  def run
+    Potty::Mouth.say('potty - inline demo (Pretty Objects: TTY)', :info, bold: true)
+    Potty::Mouth.say('Everything below stays in your terminal - no screen takeover.', :dim)
+    puts
+
+    # Passive live region (output only): spinners resolving in place.
+    app = Potty::Application.new(mode: :inline, lines: 3)
+    app.tick_interval = 40
+    app.run(DeployView.new(app))
+    puts
+
+    # Interactive prompts (listen mode): real input, rendered in place.
+    name = Potty::Mouth.ask("What should I call you?", default: 'stranger')
+    Potty::Mouth.say("Hi, #{name}!", :success)
+
+    theme = Potty::Mouth.choose('Pick a theme:', %i[light dark auto])
+    Potty::Mouth.say("Theme: #{theme}", :info)
+
+    if Potty::Mouth.confirm('Curse a little?', default: true)
+      Potty::Mouth.say("#{Potty::Mouth.bleep('damn')} right.", :warning)
+    end
+
+    Potty::Mouth.say('Inline demo done.', :success)
+  end
+end
+
+if __FILE__ == $PROGRAM_NAME
+  begin
+    PottyInlineDemo.run
+  rescue Interrupt
+    warn "\nInterrupted."
+    exit 130
+  end
+end

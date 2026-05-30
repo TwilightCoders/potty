@@ -73,19 +73,23 @@ app = Potty::Application.new
 app.run(HelloView.new(app))
 ```
 
-For a guided tour of the whole widget set, run the bundled demo in a real
-terminal:
+Two bundled demos, one per rendering mode — run either in a real terminal:
 
 ```bash
-bin/potty_demo     # from a checkout
-potty_demo         # when the gem is installed
+bin/potty_demo          # curses: full-screen
+bin/potty_inline_demo   # inline: stays in the terminal flow
 ```
 
-It's a single self-demonstrating dashboard: one composed layout (so it shows
-off the layout system by *being* it) whose form controls reconfigure the demo
-live — the Border radio restyles the very panels you're looking at, the Title
-field renames the header, the checkboxes show/hide the live animation. See
-[`examples/test_view.rb`](examples/test_view.rb) for a smaller example.
+- **`potty_demo`** (curses) — a single self-demonstrating dashboard: one
+  composed layout (it shows off the layout system by *being* it) whose form
+  controls reconfigure the demo live — the Border radio restyles the very
+  panels you're looking at, the Title field renames the header, the checkboxes
+  show/hide the live animation.
+- **`potty_inline_demo`** (inline/TTY) — styled output, a live in-place
+  "deploy" (spinners resolving without a screen takeover), and interactive
+  prompts (`ask`/`confirm`/`choose`) — all in your normal terminal flow.
+
+See [`examples/test_view.rb`](examples/test_view.rb) for a smaller example.
 
 ## Core concepts
 

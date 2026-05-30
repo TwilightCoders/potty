@@ -20,7 +20,7 @@ Gem::Specification.new do |spec|
 
   spec.files = (Dir.glob('{lib,examples,bin}/**/*') + %w[LICENSE.txt README.md CHANGELOG.md]).select { |f| File.file?(f) }
   spec.bindir = 'bin'
-  spec.executables = ['potty_demo']
+  spec.executables = %w[potty_demo potty_inline_demo]
   spec.require_paths = ['lib']
 
   spec.add_dependency 'curses', '~> 1.4'
