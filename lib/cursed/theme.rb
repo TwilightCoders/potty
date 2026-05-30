@@ -20,7 +20,10 @@ module Cursed
       status:     [::Curses::COLOR_BLACK,   ::Curses::COLOR_CYAN]
     }.freeze
 
-    def initialize
+    # Pass a palette hash ({ name => [fg, bg] }) to override or extend the
+    # defaults — Application.new(theme: Theme.new(accent: [..]))
+    def initialize(palette = nil)
+      @pairs = palette ? PAIRS.merge(palette) : PAIRS
       @colors = {}
       setup_colors if ::Curses.has_colors?
     end
@@ -29,7 +32,7 @@ module Cursed
       ::Curses.start_color
       ::Curses.use_default_colors
 
-      PAIRS.each_with_index do |(name, (fg, bg)), idx|
+      @pairs.each_with_index do |(name, (fg, bg)), idx|
         pair_num = idx + 1
         ::Curses.init_pair(pair_num, fg, bg)
         @colors[name] = ::Curses.color_pair(pair_num)

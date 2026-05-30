@@ -18,10 +18,10 @@ module Cursed
     # ~33-50ms gives smooth animation.
     attr_accessor :tick_interval
 
-    def initialize
+    def initialize(theme: nil)
       @view_stack = []
       @running = false
-      @theme = Theme.new
+      @theme = theme || Theme.new
       @window_manager = WindowManager.new
       @tick_interval = nil
     end

@@ -3,6 +3,7 @@
 require_relative 'base'
 require_relative 'list_item'
 require_relative '../keys'
+require_relative '../border'
 
 module Cursed
   module Widgets
@@ -78,21 +79,7 @@ module Cursed
       private
 
       def draw_border(window)
-        # Top border
-        window.setpos(@rect.y, @rect.x)
-        window.addstr("\u250C" + ("\u2500" * (@rect.width - 2)) + "\u2510")
-
-        # Side borders
-        (@rect.height - 2).times do |i|
-          window.setpos(@rect.y + 1 + i, @rect.x)
-          window.addstr("\u2502")
-          window.setpos(@rect.y + 1 + i, @rect.x + @rect.width - 1)
-          window.addstr("\u2502")
-        end
-
-        # Bottom border
-        window.setpos(@rect.y + @rect.height - 1, @rect.x)
-        window.addstr("\u2514" + ("\u2500" * (@rect.width - 2)) + "\u2518")
+        Border.draw(window, @rect, attr: theme[:normal])
       end
 
       def render_item(window, item, index, y, x)
