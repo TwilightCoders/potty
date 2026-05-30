@@ -30,6 +30,28 @@ RSpec.describe Cursed::Keys do
     end
   end
 
+  describe '.code' do
+    it 'turns a printable String from getch into its integer code' do
+      expect(described_class.code('h')).to eq(104)
+      expect(described_class.code(' ')).to eq(32)
+    end
+
+    it 'maps control Strings to their code (Enter, Tab, ESC)' do
+      expect(described_class.code("\n")).to eq(10)
+      expect(described_class.code("\t")).to eq(9)
+      expect(described_class.code("\e")).to eq(27)
+    end
+
+    it 'passes Integers and nil through unchanged' do
+      expect(described_class.code(259)).to eq(259)
+      expect(described_class.code(nil)).to be_nil
+    end
+
+    it 'treats an empty String as no input' do
+      expect(described_class.code('')).to be_nil
+    end
+  end
+
   describe '.printable?' do
     it 'accepts the printable ASCII range only' do
       expect(described_class.printable?(32)).to be(true)

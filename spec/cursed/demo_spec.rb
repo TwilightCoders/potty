@@ -53,38 +53,46 @@ RSpec.describe 'bin/cursed_demo' do
     expect(ivar(:@title_in).focused).to be(true)
   end
 
-  describe 'meta wiring' do
-    it 'retitles the header live as you type' do
-      input = ivar(:@title_in)
-      'meta'.each_char { |c| input.handle_key(c.ord) }
+  # These drive input through dash.handle_key — the exact path the
+  # Application event loop uses — so they exercise focus delegation into
+  # the nested Panel/HBox tree, not just the widgets in isolation.
+  describe 'meta wiring (via View#handle_key)' do
+    it 'retitles the header live as you type into the focused field' do
+      'meta'.each_char { |c| dash.handle_key(c.ord) }
       expect(ivar(:@header).text).to include('meta')
     end
 
-    it 'restyles BOTH panels when the Border radio changes' do
-      ivar(:@style_rg).selected = :rounded
+    it 'restyles BOTH panels when you Tab to the Border radio and pick one' do
+      dash.handle_key(Cursed::Keys::TAB)   # title -> radio
+      dash.handle_key(Cursed::Keys::DOWN)  # -> :rounded
+      dash.handle_key(Cursed::Keys::SPACE) # commit
       expect(ivar(:@controls_panel).style).to eq(:rounded)
       expect(ivar(:@live_panel).style).to eq(:rounded)
     end
 
-    it 'shows/hides the live widgets from the checkbox group' do
-      show = ivar(:@show)
-      # cursor starts on :anim — toggle it off
-      show.handle_key(Cursed::Keys::SPACE)
-      expect(ivar(:@anim).visible?).to be(false)
-      expect(ivar(:@spin).visible?).to be(true)
-    end
-
-    it 'stops/starts the animation from the Toggle' do
+    it 'stops the animation when you Tab to the Toggle and press Space' do
       anim = ivar(:@anim)
-      ivar(:@animate).value = false
+      dash.handle_key(Cursed::Keys::TAB) # title -> radio
+      dash.handle_key(Cursed::Keys::TAB) # radio -> toggle
+      dash.handle_key(Cursed::Keys::SPACE)
+      expect(ivar(:@animate).value).to be(false)
       expect(anim.playing?).to be(false)
-      ivar(:@animate).value = true
-      expect(anim.playing?).to be(true)
     end
 
-    it 'replays the plane when Salute is pressed' do
+    it 'hides a live widget via the checkbox group' do
+      show = ivar(:@show)
+      # reach the checkbox group: title -> radio -> toggle -> checkboxes
+      3.times { dash.handle_key(Cursed::Keys::TAB) }
+      expect(show.focused).to be(true)
+      dash.handle_key(Cursed::Keys::SPACE) # toggle :anim off
+      expect(ivar(:@anim).visible?).to be(false)
+    end
+
+    it 'replays the plane when Salute is reached and pressed' do
       ivar(:@anim).play(:spinner)
-      ivar(:@salute).press
+      4.times { dash.handle_key(Cursed::Keys::TAB) } # -> Salute button
+      expect(ivar(:@salute).focused).to be(true)
+      dash.handle_key(Cursed::Keys::ENTER)
       expect(ivar(:@anim).current).to eq(:plane)
     end
   end

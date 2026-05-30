@@ -44,6 +44,18 @@ module Cursed
 
     module_function
 
+    # Normalize a curses #getch result to an integer key code. Ruby's
+    # curses returns a String for ordinary printable input and an Integer
+    # for control/function keys — normalizing here lets all widget
+    # handle_key logic rely on numeric codes. Passes nil (tick timeout)
+    # and Integers through unchanged.
+    def code(ch)
+      return ch unless ch.is_a?(String)
+      return nil if ch.empty?
+
+      ch.ord
+    end
+
     def enter?(ch)
       ENTERS.include?(ch)
     end

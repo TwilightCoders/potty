@@ -7,15 +7,22 @@ module Cursed
   class Theme
     attr_reader :colors
 
+    # -1 means "the terminal's own default colour" (transparent), enabled by
+    # use_default_colors. Body text uses default fg AND bg so cursed inherits
+    # whatever theme the user runs — readable on dark or light terminals
+    # without us guessing. Only deliberate highlights (selection, header,
+    # status bar) carry an explicit background.
+    DEFAULT = -1
+
     PAIRS = {
-      normal:     [::Curses::COLOR_WHITE,   ::Curses::COLOR_BLACK],
+      normal:     [DEFAULT,                 DEFAULT],
       selected:   [::Curses::COLOR_BLACK,   ::Curses::COLOR_GREEN],
-      disabled:   [::Curses::COLOR_BLACK,   ::Curses::COLOR_BLACK],
-      success:    [::Curses::COLOR_GREEN,   ::Curses::COLOR_BLACK],
-      error:      [::Curses::COLOR_RED,     ::Curses::COLOR_BLACK],
-      warning:    [::Curses::COLOR_YELLOW,  ::Curses::COLOR_BLACK],
-      info:       [::Curses::COLOR_CYAN,    ::Curses::COLOR_BLACK],
-      dim:        [8,                       ::Curses::COLOR_BLACK], # Bright black
+      disabled:   [8,                       DEFAULT], # Bright black, transparent
+      success:    [::Curses::COLOR_GREEN,   DEFAULT],
+      error:      [::Curses::COLOR_RED,     DEFAULT],
+      warning:    [::Curses::COLOR_YELLOW,  DEFAULT],
+      info:       [::Curses::COLOR_CYAN,    DEFAULT],
+      dim:        [8,                       DEFAULT], # Bright black
       header:     [::Curses::COLOR_WHITE,   ::Curses::COLOR_BLUE],
       status:     [::Curses::COLOR_BLACK,   ::Curses::COLOR_CYAN]
     }.freeze

@@ -86,7 +86,12 @@ module Cursed
     private
 
     def setup_curses
+      # ncurses waits ESCDELAY ms (default 1000) after a bare ESC to see if
+      # it's the start of an escape sequence (arrows send ESC [ A). Read at
+      # init from the env, so set it before init_screen to make ESC snappy.
+      ENV['ESCDELAY'] ||= '25'
       @window_manager.setup(::Curses.init_screen)
+      ::Curses.set_escdelay(25) if ::Curses.respond_to?(:set_escdelay)
       ::Curses.curs_set(0)
       ::Curses.noecho
       ::Curses.cbreak
@@ -103,7 +108,7 @@ module Cursed
 
     def event_loop
       while @running
-        ch = @window_manager.stdscr.getch
+        ch = Keys.code(@window_manager.stdscr.getch)
 
         case ch
         when nil # tick timeout, no input (only when tick_interval is set)
