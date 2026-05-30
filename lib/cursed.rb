@@ -1,0 +1,25 @@
+# frozen_string_literal: true
+
+require_relative 'cursed/version'
+require_relative 'cursed/application'
+require_relative 'cursed/theme'
+require_relative 'cursed/layout'
+require_relative 'cursed/window_manager'
+require_relative 'cursed/view'
+require_relative 'cursed/widgets/base'
+require_relative 'cursed/widgets/list'
+require_relative 'cursed/widgets/list_item'
+require_relative 'cursed/widgets/colored_fields_item'
+require_relative 'cursed/widgets/flash_message'
+require_relative 'cursed/widgets/status_bar'
+require_relative 'cursed/widgets/progress_bar'
+require_relative 'cursed/widgets/text_input'
+require_relative 'cursed/widgets/toggle'
+require_relative 'cursed/widgets/radio_group'
+require_relative 'cursed/widgets/countdown'
+require_relative 'cursed/sprite'
+require_relative 'cursed/animator'
+require_relative 'cursed/sprites/sample'
+
+module Cursed
+end
