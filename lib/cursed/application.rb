@@ -87,14 +87,14 @@ module Cursed
 
     def setup_curses
       # ncurses waits ESCDELAY ms (default 1000) after a bare ESC to see if
-      # it's the start of an escape sequence (arrows send ESC [ A). 100ms is
+      # it's the start of an escape sequence (arrows send ESC [ A). 250ms is
       # snappy with headroom for sequences split by SSH/tmux latency. The
       # ESCDELAY env var is only honored by newer ncurses (macOS ships an old
       # one that ignores it), so set it both ways; Curses.ESCDELAY= is the
       # path that actually takes on this system.
-      ENV['ESCDELAY'] ||= '100'
+      ENV['ESCDELAY'] ||= '250'
       @window_manager.setup(::Curses.init_screen)
-      ::Curses.ESCDELAY = 100 if ::Curses.respond_to?(:ESCDELAY=)
+      ::Curses.ESCDELAY = 250 if ::Curses.respond_to?(:ESCDELAY=)
       ::Curses.curs_set(0)
       ::Curses.noecho
       ::Curses.cbreak
