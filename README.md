@@ -78,8 +78,10 @@ bin/cursed_demo     # from a checkout
 cursed_demo         # when the gem is installed
 ```
 
-It walks through forms (wired with events), motion (animation + spinners +
-countdown), and layout (panels & columns). See
+It's a single self-demonstrating dashboard: one composed layout (so it shows
+off the layout system by *being* it) whose form controls reconfigure the demo
+live — the Border radio restyles the very panels you're looking at, the Title
+field renames the header, the checkboxes show/hide the live animation. See
 [`examples/test_view.rb`](examples/test_view.rb) for a smaller example.
 
 ## Core concepts

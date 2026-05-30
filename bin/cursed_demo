@@ -1,9 +1,15 @@
 #!/usr/bin/env ruby
 # frozen_string_literal: true
 
-# cursed_demo - a tour of the cursed widget set. Run it in a real terminal:
+# cursed_demo - a self-demonstrating dashboard. Run it in a real terminal:
 #   bin/cursed_demo        (from a checkout)
 #   cursed_demo            (when the gem is installed)
+#
+# It's meta: the whole screen is one composed layout (so it demonstrates the
+# layout system by *being* it), and the form widgets on the left are wired to
+# reconfigure the demo itself live - the Border radio restyles the very panels
+# you're looking at, the Title field renames the header, the checkboxes show or
+# hide the live widgets on the right.
 
 lib = File.expand_path('../lib', __dir__)
 $LOAD_PATH.unshift(lib) if File.directory?(lib) && !$LOAD_PATH.include?(lib)
@@ -11,131 +17,97 @@ $LOAD_PATH.unshift(lib) if File.directory?(lib) && !$LOAD_PATH.include?(lib)
 require 'cursed'
 
 module CursedDemo
-  # Shared base: a status-bar helper every demo view uses.
-  class DemoView < Cursed::View
-    private
+  class Dashboard < Cursed::View
+    BORDER_STYLES = %i[single rounded double heavy].freeze
 
-    def status_bar(left, center, right)
-      bar = Cursed::Widgets::StatusBar.new(app)
-      bar.left_text = left
-      bar.center_text = center
-      bar.right_text = right
-      bar
-    end
-  end
-
-  # Root menu - each entry pushes a demo view onto the stack.
-  class MenuView < DemoView
     def build_layout
-      @flash = Cursed::Widgets::FlashMessage.new(app)
+      @flash  = Cursed::Widgets::FlashMessage.new(app)
+      @header = Cursed::Widgets::Label.new(app, text: header_for(''), color: :header, bold: true)
 
-      @list = Cursed::Widgets::List.new(app)
-      @list.items = [
-        Cursed::Widgets::SeparatorItem.new("\u2501\u2501 CURSED DEMO \u2501\u2501"),
-        Cursed::Widgets::ActionItem.new('Form widgets (input, toggle, radio, checkbox)') { app.push_view(FormView.new(app)) },
-        Cursed::Widgets::ActionItem.new('Motion (animation, spinners, countdown)') { app.push_view(MotionView.new(app)) },
-        Cursed::Widgets::ActionItem.new('Layout (panels & columns)') { app.push_view(LayoutView.new(app)) },
-        Cursed::Widgets::SeparatorItem.new,
-        Cursed::Widgets::ActionItem.new('Quit', color: :error) { app.quit }
-      ]
+      build_controls
+      build_live
+      wire_events
 
-      @status = status_bar("\u2191\u2193: Navigate  Enter: Open", 'MENU', 'q: Quit')
-      @widgets = [@flash, @list, @status]
-      @list.focus
-    end
+      @controls_panel = Cursed::Widgets::Panel.new(app, title: 'Controls', color: :info).add(
+        Cursed::Widgets::Label.new(app, text: 'Title', color: :dim),  @title_in,
+        Cursed::Widgets::Label.new(app, text: 'Border', color: :dim), @style_rg,
+        @animate,
+        Cursed::Widgets::Label.new(app, text: 'Show', color: :dim),   @show,
+        @salute
+      )
+      @live_panel = Cursed::Widgets::Panel.new(app, title: 'Live', color: :info).add(@anim, @spin, @clock)
+      @columns = Cursed::Widgets::HBox.new(app, spacing: 1).add(@controls_panel, @live_panel)
 
-    def handle_key(ch)
-      return true if super
-      return (app.quit || true) if ch == 'q'.ord
+      @status = Cursed::Widgets::StatusBar.new(app)
+      @status.left_text   = 'Tab: field   Space/Enter: act'
+      @status.center_text = 'CURSED'
+      @status.right_text  = 'ESC: quit'
 
-      false
+      @widgets = [@flash, @header, @columns, @status]
+      @title_in.focus
     end
 
     def handle_escape
       app.quit
       true
     end
-  end
 
-  # Form: the focusable widgets, stitched together with events.
-  class FormView < DemoView
-    def build_layout
-      @flash = Cursed::Widgets::FlashMessage.new(app)
+    private
 
-      @name    = Cursed::Widgets::TextInput.new(app, placeholder: 'your name')
-      @notify  = Cursed::Widgets::Toggle.new(app, label: 'Notifications', value: true)
-      @theme   = Cursed::Widgets::RadioGroup.new(app, options: [
-                                                   { value: :light, label: 'Light' },
-                                                   { value: :dark,  label: 'Dark' },
-                                                   { value: :auto,  label: 'Auto' }
-                                                 ])
-      @feats   = Cursed::Widgets::CheckboxGroup.new(app, options: [
-                                                     { value: :sync, label: 'Cloud sync' },
-                                                     { value: :beta, label: 'Beta features' }
-                                                   ])
-      @preview = Cursed::Widgets::Label.new(app, text: 'Hello, stranger', color: :dim)
-      @save    = Cursed::Widgets::Button.new(app, label: 'Save', color: :success)
-
-      # Wire the pieces together purely through events.
-      @name.on(:change)   { |t| @preview.text = "Hello, #{t.empty? ? 'stranger' : t}" }
-      @notify.on(:change) { |on| @feats.visible = on }
-      @theme.on(:change)  { |v| flash_info("Theme: #{v}") }
-      @save.on(:press)    { flash_success("Saved #{@name.text.empty? ? '(anon)' : @name.text}"); app.pop_view }
-
-      panel = Cursed::Widgets::Panel.new(app, title: 'Settings', color: :info).add(
-        Cursed::Widgets::Label.new(app, text: 'Name', color: :info), @name,
-        Cursed::Widgets::Label.new(app, text: 'Theme', color: :info), @theme,
-        @notify,
-        Cursed::Widgets::Label.new(app, text: 'Features', color: :info), @feats,
-        @preview, @save
-      )
-
-      @status = status_bar('Tab: Field  Space/Enter: Act', 'FORM', 'ESC: Back')
-      @widgets = [@flash, panel, @status]
-      @name.focus
+    def build_controls
+      @title_in = Cursed::Widgets::TextInput.new(app, placeholder: 'name this demo')
+      @style_rg = Cursed::Widgets::RadioGroup.new(app,
+        options: BORDER_STYLES.map { |s| { value: s, label: s.to_s } })
+      @animate  = Cursed::Widgets::Toggle.new(app, label: 'Fly the plane', value: true)
+      @show     = Cursed::Widgets::CheckboxGroup.new(app,
+        options: [{ value: :anim, label: 'Animation' },
+                  { value: :spin, label: 'Spinner' },
+                  { value: :clock, label: 'Countdown' }],
+        selected: %i[anim spin clock])
+      @salute   = Cursed::Widgets::Button.new(app, label: 'Salute', color: :success)
     end
-  end
 
-  # Motion: animation + spinners that resolve on a countdown.
-  class MotionView < DemoView
-    def build_layout
-      @flash = Cursed::Widgets::FlashMessage.new(app)
-
-      @anim = Cursed::Animator.new(app, color: :info)
-      @anim << Cursed::Sprites::Sample.plane     # plays once
+    def build_live
+      @anim = Cursed::Animator.new(app, color: :info, centered: true)
+      @anim << Cursed::Sprites::Sample.plane     # plays once, then loops the spinner
       @anim << Cursed::Sprites::Sample.spinner
-      @anim.on(:complete) { @anim.play(:spinner) } # plane lands -> spin
+      @anim.on(:complete) { @anim.play(:spinner) }
 
-      @s1 = Cursed::Widgets::Spinner.new(app, label: 'connecting to host')
-      @s2 = Cursed::Widgets::Spinner.new(app, label: 'verifying checksum')
-      @count = Cursed::Widgets::Countdown.new(app, seconds: 3, format: ->(r) { "resolving in #{r}s\u2026" })
-      @count.on(:expire) do
-        @s1.complete!(:success)
-        @s2.complete!(:failure)
-        flash_info('Spinners resolved')
+      @spin  = Cursed::Widgets::Spinner.new(app, label: 'rendering frames', prefix: '')
+      @clock = Cursed::Widgets::Countdown.new(app, seconds: 9,
+        format: ->(r) { "auto-salute in #{r}s" })
+    end
+
+    # Every control reconfigures the demo you're looking at.
+    def wire_events
+      @title_in.on(:change) { |t| @header.text = header_for(t) }
+
+      @style_rg.on(:change) do |style|
+        [@controls_panel, @live_panel].each { |p| p.style = style }
+        flash_info("border: #{style}")
       end
 
-      @status = status_bar('(animating)', 'MOTION', 'ESC: Back')
-      @widgets = [@flash, @anim, @s1, @s2, @count, @status]
+      @animate.on(:change) { |on| on ? @anim.resume : @anim.stop }
+
+      @show.on(:change) do |sel|
+        @anim.visible  = sel.include?(:anim)
+        @spin.visible  = sel.include?(:spin)
+        @clock.visible = sel.include?(:clock)
+      end
+
+      @salute.on(:press) { salute! }
+      @clock.on(:expire) { salute!; @clock.start } # recurring
     end
-  end
 
-  # Layout: two panels side by side in an HBox.
-  class LayoutView < DemoView
-    def build_layout
-      left = Cursed::Widgets::Panel.new(app, title: 'Left', color: :info).add(
-        Cursed::Widgets::Label.new(app, text: 'Column one'),
-        Cursed::Widgets::Label.new(app, text: 'stacked'),
-        Cursed::Widgets::Label.new(app, text: 'vertically')
-      )
-      right = Cursed::Widgets::Panel.new(app, title: 'Right', color: :success).add(
-        Cursed::Widgets::Label.new(app, text: 'Column two'),
-        Cursed::Widgets::Label.new(app, text: 'beside the first')
-      )
-      @columns = Cursed::Widgets::HBox.new(app, spacing: 1).add(left, right)
+    def salute!
+      @anim.play(:plane)
+      flash_success('o7')
+    end
 
-      @status = status_bar('', 'LAYOUT', 'ESC: Back')
-      @widgets = [@columns, @status]
+    def header_for(title)
+      title = title.strip
+      base = title.empty? ? 'a TUI kit that demos itself' : title
+      "cursed - #{base}"
     end
   end
 end
@@ -143,8 +115,8 @@ end
 if __FILE__ == $PROGRAM_NAME
   begin
     app = Cursed::Application.new
-    app.tick_interval = 40 # ~25fps so animation/countdowns advance
-    app.run(CursedDemo::MenuView.new(app))
+    app.tick_interval = 40 # ~25fps so animation/countdown advance
+    app.run(CursedDemo::Dashboard.new(app))
   rescue Interrupt
     puts "\nInterrupted."
     exit 130
