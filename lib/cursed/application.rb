@@ -88,10 +88,11 @@ module Cursed
     def setup_curses
       # ncurses waits ESCDELAY ms (default 1000) after a bare ESC to see if
       # it's the start of an escape sequence (arrows send ESC [ A). Read at
-      # init from the env, so set it before init_screen to make ESC snappy.
-      ENV['ESCDELAY'] ||= '25'
+      # init from the env, so set it before init_screen. 250ms is snappy but
+      # leaves headroom for sequences split by SSH/tmux latency.
+      ENV['ESCDELAY'] ||= '250'
       @window_manager.setup(::Curses.init_screen)
-      ::Curses.set_escdelay(25) if ::Curses.respond_to?(:set_escdelay)
+      ::Curses.set_escdelay(250) if ::Curses.respond_to?(:set_escdelay)
       ::Curses.curs_set(0)
       ::Curses.noecho
       ::Curses.cbreak
