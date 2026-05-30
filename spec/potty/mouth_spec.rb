@@ -29,6 +29,26 @@ RSpec.describe Potty::Mouth do
     end
   end
 
+  describe 'prompts off a TTY (non-interactive) return the default, never hang' do
+    let(:piped) { StringIO.new } # StringIO#tty? is false
+
+    it '.ask returns the default' do
+      expect(described_class.ask('Name?', default: 'anon', input: piped, out: piped)).to eq('anon')
+    end
+
+    it '.confirm returns the default' do
+      expect(described_class.confirm('Go?', default: true, input: piped, out: piped)).to be(true)
+    end
+
+    it '.choose returns the first option by default' do
+      expect(described_class.choose('Pick', %i[a b c], input: piped, out: piped)).to eq(:a)
+    end
+
+    it '.choose honours an explicit default' do
+      expect(described_class.choose('Pick', %i[a b c], default: :b, input: piped, out: piped)).to eq(:b)
+    end
+  end
+
   describe '.bleep' do
     it 'stars the middle, keeping first and last' do
       expect(described_class.bleep('damn')).to eq('d**n')

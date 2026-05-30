@@ -44,23 +44,34 @@ module Potty
     end
 
     # Ask for a line of text inline; returns the entered String, or nil if the
-    # user cancels with ESC. Needs a TTY (listen mode).
+    # user cancels with ESC. Needs a TTY — off a TTY (pipe/cron) it can't
+    # prompt, so it returns `default` rather than hanging.
     def ask(prompt, default: '', theme: nil, out: $stdout, input: $stdin)
+      return default unless tty?(input)
+
       app = inline_app(lines: 2, theme: theme, out: out, input: input)
       app.run(view = Prompt::Ask.new(app, prompt: prompt, default: default))
       view.result
     end
 
-    # Yes/no inline; returns true/false (ESC or Enter use `default`).
+    # Yes/no inline; returns true/false (ESC or Enter use `default`). Off a
+    # TTY, returns `default`.
     def confirm(prompt, default: false, theme: nil, out: $stdout, input: $stdin)
+      return default unless tty?(input)
+
       app = inline_app(lines: 1, theme: theme, out: out, input: input)
       app.run(view = Prompt::Confirm.new(app, prompt: prompt, default: default))
       view.result
     end
 
     # Pick one of `options` (values or {value:, label:}) inline; returns the
-    # chosen value, or nil on ESC. Arrows move, Enter picks.
-    def choose(prompt, options, theme: nil, out: $stdout, input: $stdin)
+    # chosen value, or nil on ESC. Arrows move, Enter picks. Off a TTY,
+    # returns `default` (the first option's value unless given).
+    def choose(prompt, options, default: :__first__, theme: nil, out: $stdout, input: $stdin)
+      unless tty?(input)
+        return default == :__first__ ? value_of(options.first) : default
+      end
+
       app = inline_app(lines: options.size + 1, theme: theme, out: out, input: input)
       app.run(view = Prompt::Choose.new(app, prompt: prompt, options: options))
       view.result
@@ -78,8 +89,12 @@ module Potty
       Style.new(fg: c[:fg], bg: c[:bg], bold: bold)
     end
 
-    def tty?(out)
-      out.respond_to?(:tty?) && out.tty?
+    def tty?(io)
+      io.respond_to?(:tty?) && io.tty?
+    end
+
+    def value_of(option)
+      option.is_a?(Hash) ? option[:value] : option
     end
 
     # Small inline prompt views backing ask/confirm/choose. Each captures its
