@@ -34,8 +34,8 @@ module Cursed
     end
 
     def layout_widgets
-      max_y, max_x = @app.window_manager.max_y, @app.window_manager.max_x
-      container = Layout::Rect.new(0, 0, max_x, max_y)
+      rows, cols = @app.surface.size
+      container = Layout::Rect.new(0, 0, cols, rows)
 
       # Simple stack layout with spacing
       rects = Layout.stack(container, @widgets, spacing: 1)
@@ -44,14 +44,12 @@ module Cursed
       end
     end
 
+    # Draw the widget tree onto the application's surface. The surface frame
+    # (erase/present) is owned by Application#refresh_all, so this just paints.
     def render
-      stdscr = @app.window_manager.stdscr
-      # erase (not clear) so doupdate only repaints changed cells — clear
-      # forces a full-screen redraw and strobes under animation.
-      stdscr.erase
-
+      surface = @app.surface
       @widgets.each do |widget|
-        widget.render(stdscr)
+        widget.render(surface)
       end
     end
 

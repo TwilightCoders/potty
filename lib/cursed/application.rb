@@ -5,35 +5,48 @@ require_relative 'theme'
 require_relative 'window_manager'
 require_relative 'layout'
 require_relative 'keys'
+require_relative 'surface'
+require_relative 'surfaces/curses_surface'
+require_relative 'surfaces/inline_surface'
 
 module Cursed
-  # Main curses application wrapper
-  # Handles initialization, event loop, and view stack management
+  # Main application wrapper: owns the view stack, the tick loop, and a
+  # Surface (the render target). Mode picks the surface:
+  #   :curses (default) — full-screen curses display, input via getch.
+  #   :inline           — N lines redrawn in place under the cursor via ANSI,
+  #                        no init_screen, terminal stays cooked (input
+  #                        ignored; host drives quit). Good for progress UIs.
   class Application
-    attr_reader :theme, :window_manager, :view_stack
+    attr_reader :theme, :window_manager, :view_stack, :surface
 
     # When set (milliseconds), the event loop wakes every interval even
     # without input, advancing time-based widgets (Animator, Countdown).
     # Leave nil for a purely blocking, input-driven loop (the default).
-    # ~33-50ms gives smooth animation.
+    # ~33-50ms gives smooth animation. Required for :inline.
     attr_accessor :tick_interval
 
-    def initialize(theme: nil)
+    def initialize(mode: :curses, lines: nil, theme: nil)
       @view_stack = []
       @running = false
       @theme = theme || Theme.new
-      @window_manager = WindowManager.new
+      @mode = mode
+      @lines = lines
+      # Kept for back-compat: curses-mode consumers that draw straight to
+      # window_manager.stdscr or read its dimensions.
+      @window_manager = (mode == :curses ? WindowManager.new : nil)
+      @surface = nil
       @tick_interval = nil
     end
 
     # Start the application with root view
     def run(root_view)
-      setup_curses
+      @surface = build_surface
+      @surface.start
       push_view(root_view)
       @running = true
       event_loop
     ensure
-      cleanup_curses
+      @surface&.finalize
     end
 
     # View navigation
@@ -58,8 +71,9 @@ module Cursed
     end
 
     def refresh_all
+      @surface.erase
       current_view&.render
-      @window_manager.refresh_all
+      @surface.present
     end
     alias redraw refresh_all
 
@@ -71,50 +85,35 @@ module Cursed
       refresh_all
     end
 
-    # Suspend curses for external process (e.g., shelling out)
+    # Suspend the surface for an external process (e.g., shelling out).
     def suspend
-      cleanup_curses
+      @surface&.finalize
     end
 
-    # Resume curses after suspension
+    # Resume after suspension.
     def resume
-      setup_curses
+      @surface&.start
       current_view&.activate(self)
       refresh_all
     end
 
     private
 
-    def setup_curses
-      # ncurses waits ESCDELAY ms (default 1000) after a bare ESC to see if
-      # it's the start of an escape sequence (arrows send ESC [ A). 250ms is
-      # snappy with headroom for sequences split by SSH/tmux latency. The
-      # ESCDELAY env var is only honored by newer ncurses (macOS ships an old
-      # one that ignores it), so set it both ways; Curses.ESCDELAY= is the
-      # path that actually takes on this system.
-      ENV['ESCDELAY'] ||= '250'
-      @window_manager.setup(::Curses.init_screen)
-      ::Curses.ESCDELAY = 250 if ::Curses.respond_to?(:ESCDELAY=)
-      ::Curses.curs_set(0)
-      ::Curses.noecho
-      ::Curses.cbreak
-      ::Curses.stdscr.keypad(true)
-      # Non-blocking getch when ticking: returns nil after tick_interval ms
-      # so the loop can advance animations between keystrokes.
-      ::Curses.stdscr.timeout = @tick_interval if @tick_interval
-      @theme.setup_colors
-    end
-
-    def cleanup_curses
-      ::Curses.close_screen
+    def build_surface
+      case @mode
+      when :inline
+        Surfaces::InlineSurface.new(theme: @theme, lines: @lines, tick_interval: @tick_interval || 40)
+      else
+        Surfaces::CursesSurface.new(@window_manager, @theme, tick_interval: @tick_interval)
+      end
     end
 
     def event_loop
       while @running
-        ch = Keys.code(@window_manager.stdscr.getch)
+        ch = @surface.read_key
 
         case ch
-        when nil # tick timeout, no input (only when tick_interval is set)
+        when nil # tick timeout / no input this cycle
           # fall through to tick
         when Keys::CTRL_C
           raise Interrupt

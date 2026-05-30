@@ -61,7 +61,9 @@ module Cursed
         glyph = active? ? current_frame : STATE_GLYPHS.fetch(@state, '?')
         text = truncate("#{@prefix}#{glyph} #{@label}", @rect.width)
         window.setpos(@rect.y, @rect.x)
-        window.attron(theme[@color]) { window.addstr(text) }
+        # theme.style (not theme[]) so we render in colour on either surface —
+        # curses resolves the Style to a pair, inline to ANSI SGR.
+        window.attron(theme.style(@color)) { window.addstr(text) }
       end
 
       private

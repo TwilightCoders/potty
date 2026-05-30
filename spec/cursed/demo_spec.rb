@@ -7,33 +7,27 @@
 load File.expand_path('../../bin/cursed_demo', __dir__) unless defined?(CursedDemo)
 
 RSpec.describe 'bin/cursed_demo' do
-  let(:window) do
-    Object.new.tap do |w|
-      def w.setpos(*) = nil
-      def w.addstr(*) = nil
-      def w.attron(*) = (yield if block_given?)
-      def w.erase = nil
-    end
-  end
-
-  let(:wm) do
-    win = window
-    Object.new.tap do |m|
-      m.define_singleton_method(:max_y) { 24 }
-      m.define_singleton_method(:max_x) { 80 }
-      m.define_singleton_method(:stdscr) { win }
-      m.define_singleton_method(:refresh_all) {}
+  # A fake Surface: answers size and no-ops the draw calls (attron yields).
+  let(:surface) do
+    Object.new.tap do |s|
+      def s.size = [24, 80]
+      def s.erase = nil
+      def s.setpos(*) = nil
+      def s.addstr(*) = nil
+      def s.attron(*) = (yield if block_given?)
+      def s.present = nil
     end
   end
 
   let(:app) do
-    manager = wm
+    surf = surface
     Object.new.tap do |a|
       theme = Object.new
+      def theme.style(_n, **_o) = Cursed::Style.new(fg: :default, bg: :default)
       def theme.[](_k) = 0
       def theme.attr(_k, **_o) = 0
       a.define_singleton_method(:theme) { theme }
-      a.define_singleton_method(:window_manager) { manager }
+      a.define_singleton_method(:surface) { surf }
       a.define_singleton_method(:quit) {}
     end
   end
