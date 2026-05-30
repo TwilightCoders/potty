@@ -26,6 +26,10 @@ module PottyInlineDemo
       @widgets = [@label, @build, @upload]
     end
 
+    def spacing
+      0 # pack tight so all three lines fit the sized inline region
+    end
+
     def tick(now)
       @start ||= now
       super

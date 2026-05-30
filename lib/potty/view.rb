@@ -37,11 +37,18 @@ module Potty
       rows, cols = @app.surface.size
       container = Layout::Rect.new(0, 0, cols, rows)
 
-      # Simple stack layout with spacing
-      rects = Layout.stack(container, @widgets, spacing: 1)
+      # Simple stack layout. Override #spacing to pack tighter — inline views
+      # in particular want 0 so their height matches the region exactly.
+      rects = Layout.stack(container, @widgets, spacing: spacing)
       @widgets.zip(rects).each do |widget, rect|
         widget.layout(rect)
       end
+    end
+
+    # Rows of blank space the default layout leaves between top-level widgets.
+    # Override to change it (e.g. 0 for a tightly-packed inline region).
+    def spacing
+      1
     end
 
     # Draw the widget tree onto the application's surface. The surface frame

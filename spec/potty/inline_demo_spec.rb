@@ -40,6 +40,11 @@ RSpec.describe 'bin/potty_inline_demo' do
     expect { view.render }.not_to raise_error
   end
 
+  it 'lays all three lines inside the 3-row region (spacing 0, no clipping)' do
+    upload = view.instance_variable_get(:@upload)
+    expect(upload.rect.y).to eq(2) # row 2, inside rows 0..2
+  end
+
   it 'resolves both spinners on schedule and quits' do
     build  = view.instance_variable_get(:@build)
     upload = view.instance_variable_get(:@upload)

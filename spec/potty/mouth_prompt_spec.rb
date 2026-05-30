@@ -6,6 +6,33 @@
 RSpec.describe Potty::Mouth::Prompt do
   let(:app) { Object.new.tap { |a| def a.quit = nil } }
 
+  describe 'inline layout (spacing 0 so nothing clips out of the region)' do
+    def app_sized(rows)
+      surf = Object.new
+      surf.define_singleton_method(:size) { [rows, 80] }
+      Object.new.tap do |a|
+        a.define_singleton_method(:surface) { surf }
+        a.define_singleton_method(:quit) {}
+      end
+    end
+
+    it 'lays the Ask field on the last row of its 2-row region (not clipped)' do
+      a = app_sized(2)
+      view = Potty::Mouth::Prompt::Ask.new(a, prompt: 'Name?')
+      view.activate(a)
+      expect(view.instance_variable_get(:@field).rect.y).to eq(1)
+    end
+
+    it 'keeps the Choose radio inside an (options+1)-row region' do
+      a = app_sized(4) # label + 3 options
+      view = Potty::Mouth::Prompt::Choose.new(a, prompt: 'Pick', options: %i[a b c])
+      view.activate(a)
+      radio = view.instance_variable_get(:@radio)
+      expect(radio.rect.y).to eq(1)                       # right after the label
+      expect(radio.rect.y + radio.preferred_height(80)).to be <= 4
+    end
+  end
+
   describe Potty::Mouth::Prompt::Ask do
     subject(:view) { described_class.new(app, prompt: 'Name?', default: 'x') }
 

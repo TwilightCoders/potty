@@ -100,7 +100,16 @@ module Potty
     # Small inline prompt views backing ask/confirm/choose. Each captures its
     # outcome in #result and quits the app when answered.
     module Prompt
-      class Ask < Potty::View
+      # Prompts pack tight (no inter-widget spacing) so the view height matches
+      # the inline region exactly — otherwise the default spacing pushes fields
+      # past the sized region and they render clipped/invisible.
+      class Base < Potty::View
+        def spacing
+          0
+        end
+      end
+
+      class Ask < Base
         attr_reader :result
 
         def initialize(app, prompt:, default: '')
@@ -132,7 +141,7 @@ module Potty
         end
       end
 
-      class Confirm < Potty::View
+      class Confirm < Base
         attr_reader :result
 
         def initialize(app, prompt:, default: false)
@@ -169,7 +178,7 @@ module Potty
         end
       end
 
-      class Choose < Potty::View
+      class Choose < Base
         attr_reader :result
 
         def initialize(app, prompt:, options:)
