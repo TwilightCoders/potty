@@ -2,6 +2,7 @@
 
 require 'curses'
 require_relative '../keys'
+require_relative '../line_editor'
 
 module Potty
   module Widgets
@@ -59,46 +60,44 @@ module Potty
       end
     end
 
-    # Text input item - allows inline text editing
+    # Text input item — inline text editing within a List. Shares the
+    # LineEditor model with the TextInput widget.
     class InputItem < ListItem
-      attr_accessor :input_value
-
       def initialize(label, default: "", &on_submit)
         super(label)
-        @input_value = default
+        @editor = LineEditor.new(default)
         @on_submit = on_submit
-        @cursor_pos = @input_value.length
+      end
+
+      # Back-compat accessor for the entered text.
+      def input_value
+        @editor.text
+      end
+
+      def input_value=(value)
+        @editor.text = value
       end
 
       def display_text
-        cursor = "_"
-        "#{@text}: #{@input_value}#{cursor}"
+        "#{@text}: #{@editor.text}_"
       end
 
       def handle_key(ch)
         case ch
         when *Keys::ENTERS
-          @on_submit&.call(@input_value)
-          true
+          @on_submit&.call(@editor.text)
         when *Keys::BACKSPACES
-          if @cursor_pos > 0
-            @input_value[@cursor_pos - 1] = ''
-            @cursor_pos -= 1
-          end
-          true
+          @editor.backspace
         when Keys::LEFT
-          @cursor_pos = [@cursor_pos - 1, 0].max
-          true
+          @editor.left
         when Keys::RIGHT
-          @cursor_pos = [@cursor_pos + 1, @input_value.length].min
-          true
-        when Keys::SPACE..(Keys::DEL_ASCII - 1)  # Printable ASCII
-          @input_value.insert(@cursor_pos, ch.chr)
-          @cursor_pos += 1
-          true
+          @editor.right
+        when Keys::SPACE..(Keys::DEL_ASCII - 1) # Printable ASCII
+          @editor.insert(ch.chr)
         else
-          false
+          return false
         end
+        true
       end
     end
 
