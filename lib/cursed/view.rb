@@ -102,8 +102,22 @@ module Cursed
 
     private
 
+    # Focusable leaves in visual order, recursing into containers so a
+    # nested layout (VBox/HBox/Panel) still cycles correctly with Tab.
+    def focusable_widgets
+      @widgets.flat_map do |w|
+        if w.is_a?(Widgets::Container)
+          w.focusable_widgets
+        elsif w.can_focus?
+          [w]
+        else
+          []
+        end
+      end
+    end
+
     def cycle_focus(delta)
-      focusable = @widgets.select(&:can_focus?)
+      focusable = focusable_widgets
       return if focusable.empty?
 
       current = focusable.index(focused_widget) || 0
@@ -114,7 +128,7 @@ module Cursed
     end
 
     def focused_widget
-      @widgets.find(&:focused)
+      focusable_widgets.find(&:focused)
     end
   end
 end
