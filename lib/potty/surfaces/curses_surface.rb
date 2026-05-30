@@ -8,21 +8,18 @@ require_relative '../keys'
 module Potty
   module Surfaces
     # The default render target: a full-screen curses display. Wraps the
-    # WindowManager / stdscr so existing widgets draw exactly as before.
-    #
-    # attron accepts EITHER a Potty::Style (resolved to a colour pair +
-    # attributes) OR a raw integer (a legacy curses attribute, passed
-    # through). That dual acceptance is what lets un-migrated widgets — and
-    # direct-to-window consumers like a host's own paint code — keep working
-    # untouched while new widgets go render-target-agnostic.
+    # WindowManager / stdscr. It resolves a Style to a curses colour pair +
+    # attributes (allocating pairs on demand); a raw integer is passed through
+    # unchanged, so a host that draws to the surface with its own curses attrs
+    # still works.
     class CursesSurface < Surface
       def initialize(window_manager, theme, tick_interval: nil)
         super()
         @wm = window_manager
         @theme = theme
         @tick_interval = tick_interval
-        @next_pair = theme.palette.size + 1 # leave 1..N for theme[]'s pairs
-        @pairs = nil
+        @next_pair = 1
+        @pairs = {}
       end
 
       def start
@@ -36,7 +33,10 @@ module Potty
         ::Curses.cbreak
         stdscr.keypad(true)
         stdscr.timeout = @tick_interval if @tick_interval
-        @theme.setup_colors if ::Curses.has_colors?
+        if ::Curses.has_colors?
+          ::Curses.start_color
+          ::Curses.use_default_colors # enables -1 = terminal default
+        end
       end
 
       def finalize
@@ -88,19 +88,13 @@ module Potty
         attr
       end
 
+      # Allocate (once) and cache a curses colour pair per (fg, bg) combo the
+      # theme's Styles use. The palette is small, so this stays well within
+      # the terminal's pair budget.
       def color_pair(fg, bg)
         return 0 unless ::Curses.has_colors?
 
-        (@pairs ||= seed_pairs)
         @pairs[[fg, bg]] ||= allocate_pair(fg, bg)
-      end
-
-      # Reuse the pairs Theme already allocated for its palette combos so we
-      # don't burn a second pair on every colour we share with theme[].
-      def seed_pairs
-        map = {}
-        @theme.palette.each { |name, c| map[[c[:fg], c[:bg]]] = @theme[name] }
-        map
       end
 
       def allocate_pair(fg, bg)

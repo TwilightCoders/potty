@@ -48,8 +48,11 @@ module Potty
 
       def finalize
         present                 # freeze the final frame
-        restore_cooked          # before the newline, so it lands at column 0
-        @out.write("\n")        # drop below the region
+        restore_cooked
+        # Explicit CR+LF: present leaves the cursor at the end of the last
+        # rendered row, and in raw mode \n alone is a bare line-feed (no
+        # column reset), which would indent whatever the host prints next.
+        @out.write("\r\n")      # drop below the region, at column 0
         @out.write("\e[?25h")   # restore cursor
         @out.flush
       end

@@ -23,10 +23,10 @@ RSpec.describe Potty::Theme do
     end
   end
 
-  describe '#style' do
-    # No curses init needed — style() is pure semantic resolution.
-    subject(:theme) { described_class.allocate.tap { |t| t.instance_variable_set(:@palette, described_class::PALETTE) } }
+  # Theme is pure data now (no curses), so it instantiates plainly.
+  subject(:theme) { described_class.new }
 
+  describe '#style' do
     it 'returns a Style with the palette colors' do
       s = theme.style(:info)
       expect(s).to be_a(Potty::Style)
@@ -47,11 +47,23 @@ RSpec.describe Potty::Theme do
     end
   end
 
+  describe 'the [] and attr aliases (the one-place fix)' do
+    it '[] returns the same Style as #style — so every widget renders in any mode' do
+      expect(theme[:info]).to eq(theme.style(:info))
+      expect(theme[:info]).to be_a(Potty::Style)
+    end
+
+    it 'attr returns a Style carrying bold/underline' do
+      s = theme.attr(:selected, bold: true)
+      expect(s).to be_a(Potty::Style)
+      expect(s.bold?).to be(true)
+    end
+  end
+
   describe 'custom palette' do
     it 'merges overrides over the defaults' do
-      theme = described_class.allocate
-      theme.instance_variable_set(:@palette, described_class::PALETTE.merge(info: { fg: :magenta, bg: :default }))
-      expect(theme.style(:info).fg).to eq(:magenta)
+      custom = described_class.new(info: { fg: :magenta, bg: :default })
+      expect(custom.style(:info).fg).to eq(:magenta)
     end
   end
 end
