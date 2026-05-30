@@ -85,7 +85,7 @@ module Potty
 
           marker = opt[:value] == @selected ? "(\u25CF)" : "(\u25CB)"
           on_cursor = @focused && i == @cursor
-          attr = on_cursor ? theme.attr(:selected, bold: true) : theme[:normal]
+          attr = on_cursor ? theme.style(:selected, bold: true) : theme.style(:normal)
           text = "#{marker} #{opt[:label]}"[0, @rect.width]
 
           window.setpos(@rect.y + i, @rect.x)

@@ -70,7 +70,7 @@ module Potty
 
         if @text.empty? && !@focused
           window.setpos(@rect.y, @rect.x)
-          window.attron(theme[:dim]) do
+          window.attron(theme.style(:dim)) do
             window.addstr(@placeholder.to_s[0, width].to_s.ljust(width))
           end
           return
@@ -78,7 +78,7 @@ module Potty
 
         visible = (@text[@scroll, width] || '').ljust(width)
         window.setpos(@rect.y, @rect.x)
-        window.attron(theme[:normal]) { window.addstr(visible) }
+        window.attron(theme.style(:normal)) { window.addstr(visible) }
 
         return unless @focused
 
@@ -88,7 +88,7 @@ module Potty
 
         char_under = @text[@cursor] || ' '
         window.setpos(@rect.y, @rect.x + col)
-        window.attron(theme[:normal] | ::Curses::A_REVERSE) do
+        window.attron(theme.style(:normal, reverse: true)) do
           window.addstr(char_under)
         end
       end

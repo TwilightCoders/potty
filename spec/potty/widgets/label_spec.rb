@@ -1,11 +1,12 @@
 # frozen_string_literal: true
 
 RSpec.describe Potty::Widgets::Label do
-  # Fake theme: any color -> 0, attr -> 0.
+  # Fake theme: any color -> a no-op attr/style.
   let(:theme) do
     Object.new.tap do |t|
       def t.[](_key) = 0
       def t.attr(_key, **_opts) = 0
+      def t.style(_key, **_opts) = 0
     end
   end
 
