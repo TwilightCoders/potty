@@ -4,6 +4,18 @@ All notable changes to potty are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and the project follows
 [Semantic Versioning](https://semver.org/).
 
+## [0.0.2] - 2026-05-30
+
+### Added
+- `Potty::Mouth.say(text, color)` — quick styled one-line output to a TTY
+  without standing up an Application; drops colour automatically when output
+  isn't a TTY. Plus `Potty::Mouth.bleep` (a small Easter egg).
+- `Potty::Ansi` — the symbolic-colour → SGR mapping, now shared by
+  `InlineSurface` and `Mouth` (single source of truth).
+
+### CI
+- GitHub Actions running the suite on Ruby 3.1–3.4.
+
 ## [0.0.1] - 2026-05-30
 
 Initial public release. (Developed privately under the working name `cursed`,

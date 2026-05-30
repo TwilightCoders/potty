@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative '../surface'
+require_relative '../ansi'
 
 module Potty
   module Surfaces
@@ -15,15 +16,6 @@ module Potty
     # then cursor back to the top). finalize freezes the last frame and drops
     # the cursor to the line below so the next prompt lands cleanly.
     class InlineSurface < Surface
-      SGR_FG = {
-        default: 39, black: 30, red: 31, green: 32, yellow: 33,
-        blue: 34, magenta: 35, cyan: 36, white: 37, bright_black: 90
-      }.freeze
-      SGR_BG = {
-        default: 49, black: 40, red: 41, green: 42, yellow: 43,
-        blue: 44, magenta: 45, cyan: 46, white: 47, bright_black: 100
-      }.freeze
-
       def initialize(theme:, lines: nil, tick_interval: 40, out: $stdout)
         super()
         @theme = theme
@@ -115,25 +107,13 @@ module Potty
         (0..last).each do |i|
           ch, style = cells[i]
           if style != emitted
-            out << sgr(style)
+            out << Ansi.sgr(style)
             emitted = style
           end
           out << ch
         end
-        out << "\e[0m" if emitted
+        out << Ansi::RESET if emitted
         out
-      end
-
-      def sgr(style)
-        return "\e[0m" if style.nil?
-
-        codes = []
-        codes << 1 if style.bold?
-        codes << 4 if style.underline?
-        codes << 7 if style.reverse?
-        codes << SGR_FG.fetch(style.fg, 39)
-        codes << SGR_BG.fetch(style.bg, 49)
-        "\e[#{codes.join(';')}m"
       end
 
       def detect_cols
