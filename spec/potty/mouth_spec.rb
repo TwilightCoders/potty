@@ -29,6 +29,40 @@ RSpec.describe Potty::Mouth do
     end
   end
 
+  describe '.run' do
+    # A view that quits on its first tick, so the inline loop runs one frame.
+    let(:quitting_view) do
+      Class.new(Potty::View) do
+        def build_layout = (@widgets = [])
+        def tick(now)
+          super
+          @app.quit
+        end
+      end
+    end
+
+    it 'runs an inline Application and returns the view, framed cleanly' do
+      out = StringIO.new
+      view = described_class.run(lines: 1, tick_interval: nil, out: out) do |app|
+        quitting_view.new(app)
+      end
+      expect(view).to be_a(Potty::View)
+      expect(out.string).to include("\e[?25l") # cursor hidden on start
+      expect(out.string).to include("\e[?25h") # cursor restored on finalize
+    end
+
+    it 'builds an inline-mode app (no window_manager)' do
+      out = StringIO.new
+      captured = nil
+      described_class.run(lines: 2, tick_interval: nil, out: out) do |app|
+        captured = app
+        quitting_view.new(app)
+      end
+      expect(captured.window_manager).to be_nil
+      expect(captured.surface).to be_a(Potty::Surfaces::InlineSurface)
+    end
+  end
+
   describe '.bleep' do
     it 'stars the middle, keeping first and last' do
       expect(described_class.bleep('damn')).to eq('d**n')

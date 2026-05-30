@@ -25,12 +25,13 @@ module Potty
     # ~33-50ms gives smooth animation. Required for :inline.
     attr_accessor :tick_interval
 
-    def initialize(mode: :curses, lines: nil, theme: nil)
+    def initialize(mode: :curses, lines: nil, theme: nil, out: $stdout)
       @view_stack = []
       @running = false
       @theme = theme || Theme.new
       @mode = mode
       @lines = lines
+      @out = out
       # Kept for back-compat: curses-mode consumers that draw straight to
       # window_manager.stdscr or read its dimensions.
       @window_manager = (mode == :curses ? WindowManager.new : nil)
@@ -102,7 +103,7 @@ module Potty
     def build_surface
       case @mode
       when :inline
-        Surfaces::InlineSurface.new(theme: @theme, lines: @lines, tick_interval: @tick_interval || 40)
+        Surfaces::InlineSurface.new(theme: @theme, lines: @lines, tick_interval: @tick_interval || 40, out: @out)
       else
         Surfaces::CursesSurface.new(@window_manager, @theme, tick_interval: @tick_interval)
       end

@@ -7,11 +7,15 @@ on [Keep a Changelog](https://keepachangelog.com/), and the project follows
 ## [0.0.2] - 2026-05-30
 
 ### Added
-- `Potty::Mouth.say(text, color)` — quick styled one-line output to a TTY
-  without standing up an Application; drops colour automatically when output
-  isn't a TTY. Plus `Potty::Mouth.bleep` (a small Easter egg).
+- `Potty::Mouth` — potty's inline voice (a mouth speaks but doesn't listen,
+  which is exactly inline mode). Two sizes:
+  - `Mouth.say(text, color)` — a styled one-liner with no Application; drops
+    colour when output isn't a TTY so logs stay clean. (+ `Mouth.bleep`.)
+  - `Mouth.run(lines:) { |app| view }` — a live, redrawing inline region;
+    sugar over `Application.new(mode: :inline)` (which remains the engine).
 - `Potty::Ansi` — the symbolic-colour → SGR mapping, now shared by
   `InlineSurface` and `Mouth` (single source of truth).
+- `Application.new(out:)` — redirect inline output (testability/piping).
 
 ### CI
 - GitHub Actions running the suite on Ruby 3.1–3.4.
