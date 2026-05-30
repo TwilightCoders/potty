@@ -1,4 +1,4 @@
-# cursed
+# potty
 
 A curses-based terminal UI framework for Ruby. Build full-screen TUIs from a
 tree of composable widgets, with view-stack navigation, a focus model, theming,
@@ -13,7 +13,7 @@ and frame-based animation.
  ↑↓: Navigate         HELLO         ESC: Quit
 ```
 
-> **Status:** pre-release (`0.1.0`). The API is young and evolving under real
+> **Status:** early release (`0.0.1`). The API is young and evolving under real
 > consumers. Expect additive change.
 
 ## Installation
@@ -23,35 +23,35 @@ published to RubyGems — depend on it via git or a local path:
 
 ```ruby
 # Gemfile
-gem 'cursed', github: 'TwilightCoders/cursed'
+gem 'potty', github: 'TwilightCoders/potty'
 # or, for local development:
-gem 'cursed', path: '../cursed'
+gem 'potty', path: '../potty'
 ```
 
 ```ruby
-require 'cursed'
+require 'potty'
 ```
 
 ## Quick start
 
-A `Cursed::Application` runs a stack of `Cursed::View`s. A view builds a tree of
+A `Potty::Application` runs a stack of `Potty::View`s. A view builds a tree of
 widgets in `build_layout` and reacts to input. Subclass `View`, hand the app a
 root view, and call `run`:
 
 ```ruby
-require 'cursed'
+require 'potty'
 
-class HelloView < Cursed::View
+class HelloView < Potty::View
   def build_layout
-    @flash = Cursed::Widgets::FlashMessage.new(app)
+    @flash = Potty::Widgets::FlashMessage.new(app)
 
-    @list = Cursed::Widgets::List.new(app)
+    @list = Potty::Widgets::List.new(app)
     @list.items = [
-      Cursed::Widgets::ActionItem.new('Say hello') { flash_success('Hello!') },
-      Cursed::Widgets::ActionItem.new('Quit')      { app.quit }
+      Potty::Widgets::ActionItem.new('Say hello') { flash_success('Hello!') },
+      Potty::Widgets::ActionItem.new('Quit')      { app.quit }
     ]
 
-    @status = Cursed::Widgets::StatusBar.new(app)
+    @status = Potty::Widgets::StatusBar.new(app)
     @status.left_text   = '↑↓: Navigate'
     @status.center_text = 'HELLO'
     @status.right_text  = 'ESC: Quit'
@@ -66,7 +66,7 @@ class HelloView < Cursed::View
   end
 end
 
-app = Cursed::Application.new
+app = Potty::Application.new
 app.run(HelloView.new(app))
 ```
 
@@ -74,8 +74,8 @@ For a guided tour of the whole widget set, run the bundled demo in a real
 terminal:
 
 ```bash
-bin/cursed_demo     # from a checkout
-cursed_demo         # when the gem is installed
+bin/potty_demo     # from a checkout
+potty_demo         # when the gem is installed
 ```
 
 It's a single self-demonstrating dashboard: one composed layout (so it shows
@@ -88,7 +88,7 @@ field renames the header, the checkboxes show/hide the live animation. See
 
 ### Application
 
-`Cursed::Application` owns the curses lifecycle and the event loop.
+`Potty::Application` owns the curses lifecycle and the event loop.
 
 - `run(root_view)` — set up curses, push the root view, loop until `quit`.
 - `push_view(view)` / `pop_view` — navigate a stack of views (e.g. drilling
@@ -101,7 +101,7 @@ field renames the header, the checkboxes show/hide the live animation. See
 
 ### View
 
-Subclass `Cursed::View` and override:
+Subclass `Potty::View` and override:
 
 - `build_layout` — construct widgets into `@widgets` and call `focus` on the
   initial one. Called once at construction.
@@ -118,7 +118,7 @@ containers). `flash_success`, `flash_error`, and `flash_info` post messages to a
 
 ### Events
 
-Every widget mixes in `Cursed::Events`, so you can wire a UI together
+Every widget mixes in `Potty::Events`, so you can wire a UI together
 declaratively instead of subclassing for one-off behavior. Widgets emit semantic
 events; subscribe with `on`:
 
@@ -131,7 +131,7 @@ save.on(:press)    { app.pop_view }
 Emitted events: `:focus`/`:blur` (any widget), `:change` (`TextInput`, `Toggle`,
 `RadioGroup`, `CheckboxGroup`), `:select`/`:activate` (`List`), `:press`
 (`Button`), `:expire` (`Countdown`), `:complete` (`Animator`, `Spinner`). `on`
-returns self and supports multiple listeners. Keys are named in `Cursed::Keys`
+returns self and supports multiple listeners. Keys are named in `Potty::Keys`
 (`ENTER`, `ESC`, `TAB`, `UP`, …) — no magic integers in your `handle_key`.
 
 ### Containers & composition
@@ -145,16 +145,16 @@ Render, tick, and focus traversal all recurse.
   `color:`) that insets its children.
 
 ```ruby
-Cursed::Widgets::Panel.new(app, title: 'Settings').add(
-  Cursed::Widgets::Label.new(app, text: 'Name'),
-  Cursed::Widgets::TextInput.new(app),
-  Cursed::Widgets::Button.new(app, label: 'Save')
+Potty::Widgets::Panel.new(app, title: 'Settings').add(
+  Potty::Widgets::Label.new(app, text: 'Name'),
+  Potty::Widgets::TextInput.new(app),
+  Potty::Widgets::Button.new(app, label: 'Save')
 )
 ```
 
 ### Widgets
 
-Every widget inherits `Cursed::Widgets::Base` and implements as much of this
+Every widget inherits `Potty::Widgets::Base` and implements as much of this
 contract as it needs:
 
 | Method | Purpose |
@@ -199,7 +199,7 @@ contract as it needs:
 
 ### Layout
 
-`Cursed::Layout` is pure geometry over a `Rect(x, y, width, height)`:
+`Potty::Layout` is pure geometry over a `Rect(x, y, width, height)`:
 
 - `Layout.stack(container, widgets, spacing:)` — vertical stack (the default a
   view uses), querying each widget's `preferred_height`.
@@ -208,7 +208,7 @@ contract as it needs:
 
 ### Theme
 
-`Cursed::Theme` maps semantic names to curses color pairs: `:normal`,
+`Potty::Theme` maps semantic names to curses color pairs: `:normal`,
 `:selected`, `:disabled`, `:success`, `:error`, `:warning`, `:info`, `:dim`,
 `:header`, `:status`.
 
@@ -224,40 +224,40 @@ give the app a tick interval — the loop then wakes every N milliseconds, fans 
 single shared `Time.now` out to every widget's `tick(now)`, and repaints.
 
 ```ruby
-app = Cursed::Application.new
+app = Potty::Application.new
 app.tick_interval = 40   # ms; ≈25fps. nil (default) = blocking, input-only.
 app.run(view)
 ```
 
-`Cursed::Sprite` is a named sequence of multiline-string frames; `Cursed::Animator`
+`Potty::Sprite` is a named sequence of multiline-string frames; `Potty::Animator`
 is a widget that plays sprites by elapsed-time / fps, with `:loop` and `:once`
 modes (`:once` fires `on_complete`).
 
 ```ruby
-class LoaderView < Cursed::View
+class LoaderView < Potty::View
   def build_layout
-    @spinner = Cursed::Animator.new(app, centered: true, color: :info)
-    @spinner << Cursed::Sprites::Sample.spinner   # first sprite auto-plays
-    @label   = Cursed::Widgets::Label.new(app, text: 'Loading…', color: :info)
+    @spinner = Potty::Animator.new(app, centered: true, color: :info)
+    @spinner << Potty::Sprites::Sample.spinner   # first sprite auto-plays
+    @label   = Potty::Widgets::Label.new(app, text: 'Loading…', color: :info)
     @widgets = [@spinner, @label]
   end
 end
 
-app = Cursed::Application.new
+app = Potty::Application.new
 app.tick_interval = 40
 app.run(LoaderView.new(app))
 ```
 
 `add_sprite` (`<<`) registers more sprites; `play(:name)` swaps and restarts.
 Define your own `Sprite.new(:name, frames: [...], fps:, mode:)`;
-`Cursed::Sprites::Sample` (`spinner`, `plane`) is a template to copy.
+`Potty::Sprites::Sample` (`spinner`, `plane`) is a template to copy.
 
 ## Development
 
 ```bash
 bundle install
 bundle exec rspec                       # full suite
-bundle exec rspec spec/cursed/animator_spec.rb:42   # a single example
+bundle exec rspec spec/potty/animator_spec.rb:42   # a single example
 ruby examples/test_view.rb              # interactive demo (needs a real TTY)
 ```
 

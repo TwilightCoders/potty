@@ -2,13 +2,13 @@
 
 $LOAD_PATH.unshift File.expand_path('../lib', __dir__)
 
-require 'cursed'
+require 'potty'
 
 # Logic-only specs: widgets are exercised through their public API
 # (handle_key, tick, accessors) without invoking curses rendering, so no
 # init_screen / real TTY is required. `app` is a bare stand-in since only
 # render() touches app.theme.
-module CursedSpec
+module PottySpec
   def self.app
     Object.new
   end

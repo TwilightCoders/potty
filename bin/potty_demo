@@ -1,0 +1,128 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# potty_demo - a self-demonstrating dashboard. Run it in a real terminal:
+#   bin/potty_demo        (from a checkout)
+#   potty_demo            (when the gem is installed)
+#
+# It's meta: the whole screen is one composed layout (so it demonstrates the
+# layout system by *being* it), and the form widgets on the left are wired to
+# reconfigure the demo itself live - the Border radio restyles the very panels
+# you're looking at, the Title field renames the header, the checkboxes show or
+# hide the live widgets on the right.
+
+lib = File.expand_path('../lib', __dir__)
+$LOAD_PATH.unshift(lib) if File.directory?(lib) && !$LOAD_PATH.include?(lib)
+
+require 'potty'
+
+module PottyDemo
+  class Dashboard < Potty::View
+    BORDER_STYLES = %i[single rounded double heavy].freeze
+
+    def build_layout
+      @flash  = Potty::Widgets::FlashMessage.new(app)
+      @header = Potty::Widgets::Label.new(app, text: header_for(''), color: :header, bold: true)
+
+      build_controls
+      build_live
+      wire_events
+
+      @controls_panel = Potty::Widgets::Panel.new(app, title: 'Controls', color: :info).add(
+        Potty::Widgets::Label.new(app, text: 'Title', color: :dim),  @title_in,
+        Potty::Widgets::Label.new(app, text: 'Border', color: :dim), @style_rg,
+        @animate,
+        Potty::Widgets::Label.new(app, text: 'Show', color: :dim),   @show,
+        @salute
+      )
+      @live_panel = Potty::Widgets::Panel.new(app, title: 'Live', color: :info).add(@anim, @spin, @clock)
+      @columns = Potty::Widgets::HBox.new(app, spacing: 1).add(@controls_panel, @live_panel)
+
+      @status = Potty::Widgets::StatusBar.new(app)
+      @status.left_text   = 'Tab: field   Space/Enter: act'
+      @status.center_text = 'CURSED'
+      @status.right_text  = 'ESC: quit'
+
+      @widgets = [@flash, @header, @columns, @status]
+      @title_in.focus
+    end
+
+    def handle_escape
+      app.quit
+      true
+    end
+
+    private
+
+    def build_controls
+      @title_in = Potty::Widgets::TextInput.new(app, placeholder: 'name this demo')
+      @style_rg = Potty::Widgets::RadioGroup.new(app,
+        options: BORDER_STYLES.map { |s| { value: s, label: s.to_s } })
+      @animate  = Potty::Widgets::Toggle.new(app, label: 'Fly the plane', value: true)
+      @show     = Potty::Widgets::CheckboxGroup.new(app,
+        options: [{ value: :anim, label: 'Animation' },
+                  { value: :spin, label: 'Spinner' },
+                  { value: :clock, label: 'Countdown' }],
+        selected: %i[anim spin clock])
+      @salute   = Potty::Widgets::Button.new(app, label: 'Salute', color: :success)
+    end
+
+    def build_live
+      @anim = Potty::Animator.new(app, color: :info, centered: true)
+      @anim << Potty::Sprites::Sample.plane     # plays once, then loops the spinner
+      @anim << Potty::Sprites::Sample.spinner
+      @anim.on(:complete) { @anim.play(:spinner) }
+
+      @spin  = Potty::Widgets::Spinner.new(app, label: 'rendering frames', prefix: '')
+      @clock = Potty::Widgets::Countdown.new(app, seconds: 9,
+        format: ->(r) { "auto-salute in #{r}s" })
+    end
+
+    # Every control reconfigures the demo you're looking at.
+    def wire_events
+      @title_in.on(:change) { |t| @header.text = header_for(t) }
+
+      @style_rg.on(:change) do |style|
+        [@controls_panel, @live_panel].each { |p| p.style = style }
+        flash_info("border: #{style}")
+      end
+
+      @animate.on(:change) { |on| on ? @anim.resume : @anim.stop }
+
+      @show.on(:change) do |sel|
+        @anim.visible  = sel.include?(:anim)
+        @spin.visible  = sel.include?(:spin)
+        @clock.visible = sel.include?(:clock)
+      end
+
+      @salute.on(:press) { salute! }
+      @clock.on(:expire) { salute!; @clock.start } # recurring
+    end
+
+    def salute!
+      @anim.play(:plane)
+      flash_success('o7')
+    end
+
+    def header_for(title)
+      title = title.strip
+      base = title.empty? ? 'a TUI kit that demos itself' : title
+      "potty - #{base}"
+    end
+  end
+end
+
+if __FILE__ == $PROGRAM_NAME
+  begin
+    app = Potty::Application.new
+    app.tick_interval = 40 # ~25fps so animation/countdown advance
+    app.run(PottyDemo::Dashboard.new(app))
+  rescue Interrupt
+    puts "\nInterrupted."
+    exit 130
+  rescue StandardError => e
+    warn "Error: #{e.message}"
+    warn e.backtrace if ENV['DEBUG']
+    exit 1
+  end
+end

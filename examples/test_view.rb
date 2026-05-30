@@ -1,11 +1,11 @@
 # frozen_string_literal: true
 
-require_relative '../lib/cursed'
+require_relative '../lib/potty'
 
-module Cursed
+module Potty
   module Examples
     # Simple test view to verify curses setup
-    class TestView < Cursed::View
+    class TestView < Potty::View
       def build_layout
         @flash = Widgets::FlashMessage.new(app)
 
@@ -73,8 +73,8 @@ end
 # Run the test if executed directly
 if __FILE__ == $0
   begin
-    app = Cursed::Application.new
-    root_view = Cursed::Examples::TestView.new(app)
+    app = Potty::Application.new
+    root_view = Potty::Examples::TestView.new(app)
     app.run(root_view)
   rescue Interrupt
     puts "\nInterrupted. Exiting..."
