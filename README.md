@@ -6,9 +6,9 @@ and frame-based animation.
 
 ```
 ┌─────────────────────────────────┐
-│ → Say hello                      │
-│   Configure                      │
-│   Quit                           │
+│ → Say hello                     │
+│   Configure                     │
+│   Quit                          │
 └─────────────────────────────────┘
  ↑↓: Navigate         HELLO         ESC: Quit
 ```

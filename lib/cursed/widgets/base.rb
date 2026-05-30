@@ -1,9 +1,13 @@
 # frozen_string_literal: true
 
+require_relative '../events'
+
 module Cursed
   module Widgets
     # Base class for all widgets
     class Base
+      include Events
+
       attr_accessor :rect, :parent, :focused
       attr_reader :app
 
@@ -70,23 +74,35 @@ module Cursed
       def focus
         @focused = true
         on_focus
+        emit(:focus, self)
       end
 
       def blur
         @focused = false
         on_blur
+        emit(:blur, self)
       end
 
       def on_focus; end
       def on_blur; end
 
       # Visibility
+      def visible?
+        @visible
+      end
+
       def show
         @visible = true
+        self
       end
 
       def hide
         @visible = false
+        self
+      end
+
+      def visible=(flag)
+        flag ? show : hide
       end
 
       # Helpers

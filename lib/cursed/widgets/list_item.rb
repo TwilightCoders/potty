@@ -1,5 +1,8 @@
 # frozen_string_literal: true
 
+require 'curses'
+require_relative '../keys'
+
 module Cursed
   module Widgets
     # Base list item
@@ -74,22 +77,22 @@ module Cursed
 
       def handle_key(ch)
         case ch
-        when 10, 13  # Enter
+        when *Keys::ENTERS
           @on_submit&.call(@input_value)
           true
-        when 127, ::Curses::Key::BACKSPACE
+        when *Keys::BACKSPACES
           if @cursor_pos > 0
             @input_value[@cursor_pos - 1] = ''
             @cursor_pos -= 1
           end
           true
-        when ::Curses::Key::LEFT
+        when Keys::LEFT
           @cursor_pos = [@cursor_pos - 1, 0].max
           true
-        when ::Curses::Key::RIGHT
+        when Keys::RIGHT
           @cursor_pos = [@cursor_pos + 1, @input_value.length].min
           true
-        when 32..126  # Printable ASCII
+        when Keys::SPACE..(Keys::DEL_ASCII - 1)  # Printable ASCII
           @input_value.insert(@cursor_pos, ch.chr)
           @cursor_pos += 1
           true

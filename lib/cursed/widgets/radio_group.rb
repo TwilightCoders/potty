@@ -2,6 +2,7 @@
 
 require 'curses'
 require_relative 'base'
+require_relative '../keys'
 
 module Cursed
   module Widgets
@@ -47,6 +48,7 @@ module Cursed
         @selected = value
         @cursor = idx
         @on_change&.call(@selected)
+        emit(:change, @selected)
       end
 
       def preferred_height(_width)
@@ -55,11 +57,11 @@ module Cursed
 
       def handle_key(ch)
         case ch
-        when ::Curses::Key::UP
+        when Keys::UP
           move(-1)
-        when ::Curses::Key::DOWN
+        when Keys::DOWN
           move(1)
-        when 32, 10, 13 # Space / Enter
+        when Keys::SPACE, *Keys::ENTERS
           choose(@cursor)
         else
           return false
@@ -108,6 +110,7 @@ module Cursed
 
         @selected = opt[:value]
         @on_change&.call(@selected)
+        emit(:change, @selected)
       end
 
       def index_of(value)

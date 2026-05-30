@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 require_relative 'layout'
+require_relative 'keys'
 
 module Cursed
   # Base class for views
@@ -66,10 +67,10 @@ module Cursed
 
       # Handle view-level keys
       case ch
-      when 9  # Tab
+      when Keys::TAB
         cycle_focus(1)
         true
-      when 353  # Shift+Tab
+      when Keys::SHIFT_TAB
         cycle_focus(-1)
         true
       else

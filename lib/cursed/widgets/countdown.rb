@@ -66,6 +66,7 @@ module Cursed
         @expired = true
         @running = false
         @on_expire&.call(self)
+        emit(:expire, self)
       end
 
       def render(window)

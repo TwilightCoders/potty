@@ -39,18 +39,18 @@ RSpec.describe Cursed::Widgets::TextInput do
 
   it 'deletes forward' do
     type('abc')
-    input.handle_key(Curses::Key::LEFT)
-    input.handle_key(Curses::Key::LEFT)
-    input.handle_key(described_class::KEY_DC)
+    input.handle_key(Cursed::Keys::LEFT)
+    input.handle_key(Cursed::Keys::LEFT)
+    input.handle_key(Cursed::Keys::DELETE)
     expect(input.text).to eq('ac')
   end
 
   it 'jumps home and end' do
     type('abc')
-    input.handle_key(described_class::KEY_HOME)
+    input.handle_key(Cursed::Keys::HOME)
     input.handle_key('X'.ord)
     expect(input.text).to eq('Xabc')
-    input.handle_key(described_class::KEY_END)
+    input.handle_key(Cursed::Keys::END_)
     input.handle_key('Y'.ord)
     expect(input.text).to eq('XabcY')
   end

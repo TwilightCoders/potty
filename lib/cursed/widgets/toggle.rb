@@ -1,11 +1,13 @@
 # frozen_string_literal: true
 
 require_relative 'base'
+require_relative '../keys'
 
 module Cursed
   module Widgets
     # Boolean on/off control. Space (or Enter) flips it when focused.
     # Renders "[\u25CF] label" when on, "[\u25CB] label" when off.
+    # Emits :change(value) when toggled.
     class Toggle < Base
       attr_reader :value
       attr_accessor :label, :on_change
@@ -27,6 +29,7 @@ module Cursed
 
         @value = val
         @on_change&.call(@value)
+        emit(:change, @value)
       end
 
       def toggle
@@ -39,7 +42,7 @@ module Cursed
 
       def handle_key(ch)
         case ch
-        when 32, 10, 13 # Space / Enter
+        when Keys::SPACE, *Keys::ENTERS
           toggle
           true
         else

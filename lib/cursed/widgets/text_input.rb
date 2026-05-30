@@ -2,6 +2,7 @@
 
 require 'curses'
 require_relative 'base'
+require_relative '../keys'
 
 module Cursed
   module Widgets
@@ -9,14 +10,9 @@ module Cursed
     # a dim placeholder when empty and unfocused, and scrolls horizontally
     # when the text outgrows the field.
     #
-    # ASCII input only for now (matches the rest of the framework); UTF-8
-    # entry would need multibyte getch handling.
+    # Emits :change(text) on every edit. ASCII input only for now (matches
+    # the rest of the framework); UTF-8 entry would need multibyte getch.
     class TextInput < Base
-      # Resolved with fallbacks so we work across curses versions/builds.
-      KEY_HOME = defined?(::Curses::Key::HOME) ? ::Curses::Key::HOME : 262
-      KEY_END  = defined?(::Curses::Key::END)  ? ::Curses::Key::END  : 360
-      KEY_DC   = defined?(::Curses::Key::DC)   ? ::Curses::Key::DC   : 330
-
       attr_reader :text
       attr_accessor :placeholder, :max_length, :on_change
 
@@ -46,19 +42,19 @@ module Cursed
 
       def handle_key(ch)
         case ch
-        when ::Curses::Key::LEFT
+        when Keys::LEFT
           @cursor = [@cursor - 1, 0].max
-        when ::Curses::Key::RIGHT
+        when Keys::RIGHT
           @cursor = [@cursor + 1, @text.length].min
-        when KEY_HOME, 1 # Home / Ctrl+A
+        when Keys::HOME, Keys::CTRL_A
           @cursor = 0
-        when KEY_END, 5  # End / Ctrl+E
+        when Keys::END_, Keys::CTRL_E
           @cursor = @text.length
-        when 127, 8, ::Curses::Key::BACKSPACE
+        when Keys::DEL_ASCII, Keys::CTRL_H, Keys::BACKSPACE
           backspace
-        when KEY_DC, 4   # Delete / Ctrl+D
+        when Keys::DELETE, Keys::CTRL_D
           delete_forward
-        when 32..126
+        when Keys::SPACE..(Keys::DEL_ASCII - 1)
           insert(ch.chr)
         else
           return false
@@ -131,9 +127,11 @@ module Cursed
       end
 
       def notify_change
-        # Hand the callback a snapshot, not the live internal buffer, so a
+        # Hand listeners a snapshot, not the live internal buffer, so a
         # consumer that stores the value doesn't see it mutate underfoot.
-        @on_change&.call(@text.dup)
+        snapshot = @text.dup
+        @on_change&.call(snapshot)
+        emit(:change, snapshot)
       end
     end
   end

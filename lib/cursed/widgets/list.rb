@@ -2,10 +2,12 @@
 
 require_relative 'base'
 require_relative 'list_item'
+require_relative '../keys'
 
 module Cursed
   module Widgets
-    # Scrollable list widget with heterogeneous items
+    # Scrollable list widget with heterogeneous items.
+    # Emits :select(item) on cursor move and :activate(item) on Enter.
     class List < Base
       attr_accessor :items, :on_select, :on_activate
 
@@ -58,13 +60,13 @@ module Cursed
         return false if @items.empty?
 
         case ch
-        when ::Curses::Key::UP
+        when Keys::UP
           move_selection(-1)
           true
-        when ::Curses::Key::DOWN
+        when Keys::DOWN
           move_selection(1)
           true
-        when 10, 13  # Enter
+        when *Keys::ENTERS
           activate_current
           true
         else
@@ -145,6 +147,7 @@ module Cursed
         @selected_index = new_index
         adjust_scroll
         @on_select&.call(@items[@selected_index])
+        emit(:select, @items[@selected_index])
       end
 
       def adjust_scroll
@@ -168,6 +171,7 @@ module Cursed
         return if item.disabled?
 
         @on_activate&.call(item)
+        emit(:activate, item)
         item.activate
       end
 

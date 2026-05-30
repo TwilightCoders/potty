@@ -117,6 +117,7 @@ module Cursed
           @frame_index = sprite.frame_count - 1
           @playing = false
           @on_complete&.call(self)
+          emit(:complete, self)
         end
       else # :loop
         @frame_index = (@frame_index + steps) % sprite.frame_count

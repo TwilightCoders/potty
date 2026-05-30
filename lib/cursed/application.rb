@@ -4,6 +4,7 @@ require 'curses'
 require_relative 'theme'
 require_relative 'window_manager'
 require_relative 'layout'
+require_relative 'keys'
 
 module Cursed
   # Main curses application wrapper
@@ -107,9 +108,9 @@ module Cursed
         case ch
         when nil # tick timeout, no input (only when tick_interval is set)
           # fall through to tick
-        when 3  # Ctrl+C
+        when Keys::CTRL_C
           raise Interrupt
-        when 27 # ESC
+        when Keys::ESC
           unless current_view&.handle_escape
             pop_view if @view_stack.size > 1
           end
