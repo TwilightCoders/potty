@@ -70,8 +70,17 @@ app = Cursed::Application.new
 app.run(HelloView.new(app))
 ```
 
-See [`examples/test_view.rb`](examples/test_view.rb) for a fuller demo
-(`ruby examples/test_view.rb`).
+For a guided tour of the whole widget set, run the bundled demo in a real
+terminal:
+
+```bash
+bin/cursed_demo     # from a checkout
+cursed_demo         # when the gem is installed
+```
+
+It walks through forms (wired with events), motion (animation + spinners +
+countdown), and layout (panels & columns). See
+[`examples/test_view.rb`](examples/test_view.rb) for a smaller example.
 
 ## Core concepts
 
@@ -100,9 +109,46 @@ Subclass `Cursed::View` and override:
   (in)active on the stack; a good place to rebuild dynamic lists.
 
 The view routes keys to the focused widget first, then cycles focus with
-**Tab / Shift+Tab** across widgets whose `can_focus?` is true. `flash_success`,
-`flash_error`, and `flash_info` post messages to a `FlashMessage` widget in the
-tree. Widgets are laid out top-to-bottom by [`Layout`](#layout).
+**Tab / Shift+Tab** across widgets whose `can_focus?` is true (recursing into
+containers). `flash_success`, `flash_error`, and `flash_info` post messages to a
+`FlashMessage` widget in the tree. Widgets are laid out top-to-bottom by
+[`Layout`](#layout), unless you nest them in [containers](#containers--composition).
+
+### Events
+
+Every widget mixes in `Cursed::Events`, so you can wire a UI together
+declaratively instead of subclassing for one-off behavior. Widgets emit semantic
+events; subscribe with `on`:
+
+```ruby
+name.on(:change)   { |text| greeting.text = "Hello, #{text}" }
+notify.on(:change) { |on|   features.visible = on }
+save.on(:press)    { app.pop_view }
+```
+
+Emitted events: `:focus`/`:blur` (any widget), `:change` (`TextInput`, `Toggle`,
+`RadioGroup`, `CheckboxGroup`), `:select`/`:activate` (`List`), `:press`
+(`Button`), `:expire` (`Countdown`), `:complete` (`Animator`, `Spinner`). `on`
+returns self and supports multiple listeners. Keys are named in `Cursed::Keys`
+(`ENTER`, `ESC`, `TAB`, `UP`, …) — no magic integers in your `handle_key`.
+
+### Containers & composition
+
+A `View`'s `@widgets` is laid out as a vertical stack, but any entry can be a
+container holding more widgets — so you get nesting, columns, and framed panels.
+Render, tick, and focus traversal all recurse.
+
+- **`VBox`** / **`HBox`** — vertical stack / equal-width columns (`spacing:`).
+- **`Panel`** — bordered, optionally titled container (`title:`, `style:`,
+  `color:`) that insets its children.
+
+```ruby
+Cursed::Widgets::Panel.new(app, title: 'Settings').add(
+  Cursed::Widgets::Label.new(app, text: 'Name'),
+  Cursed::Widgets::TextInput.new(app),
+  Cursed::Widgets::Button.new(app, label: 'Save')
+)
+```
 
 ### Widgets
 
@@ -128,14 +174,20 @@ contract as it needs:
   (multi-color segments via `render_custom`).
 - **`Label`** — static, non-focusable single-line text. `text:`, `color:`,
   `bold:`.
+- **`Button`** — focusable; Space/Enter emits `:press`. `on_press:` shortcut.
 - **`TextInput`** — single-line editable field. Block cursor when focused, dim
   placeholder, horizontal scroll. `text` / `text=`, `placeholder`,
-  `max_length`, `on_change` (gets a snapshot). ASCII input.
+  `max_length`, emits `:change` (snapshot). ASCII input.
 - **`Toggle`** — boolean `[●]`/`[○]`; Space/Enter flips. `value` / `value=`,
-  `label`, `on_change`.
+  `label`, emits `:change`.
 - **`RadioGroup`** — N mutually exclusive `{value, label}` options; arrows move a
-  cursor, Space/Enter commits. `selected` / `selected=`, `on_change`.
-- **`Countdown`** — passive display counting down N seconds, fires `on_expire`.
+  cursor, Space/Enter commits. `selected` / `selected=`, emits `:change`.
+- **`CheckboxGroup`** — multi-select sibling of `RadioGroup`; Space/Enter toggles
+  the cursor row. `selected`, `selected?`, emits `:change` (selected values).
+- **`Spinner`** — single-line activity indicator: animated braille glyph + live
+  `label` + trailing state. `complete!(:success/:failure/:cancelled)` freezes the
+  glyph and flips color (idempotent); emits `:complete`. Tick-driven.
+- **`Countdown`** — passive display counting down N seconds, emits `:expire`.
   Tick-driven (see below).
 - **`FlashMessage`** — transient success/error/warning/info banner with timeout.
 - **`StatusBar`** — bottom bar with `left_text` / `center_text` / `right_text`.
