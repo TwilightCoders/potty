@@ -1,0 +1,156 @@
+#!/usr/bin/env ruby
+# frozen_string_literal: true
+
+# cursed_demo - a tour of the cursed widget set. Run it in a real terminal:
+#   bin/cursed_demo        (from a checkout)
+#   cursed_demo            (when the gem is installed)
+
+lib = File.expand_path('../lib', __dir__)
+$LOAD_PATH.unshift(lib) if File.directory?(lib) && !$LOAD_PATH.include?(lib)
+
+require 'cursed'
+
+module CursedDemo
+  # Shared base: a status-bar helper every demo view uses.
+  class DemoView < Cursed::View
+    private
+
+    def status_bar(left, center, right)
+      bar = Cursed::Widgets::StatusBar.new(app)
+      bar.left_text = left
+      bar.center_text = center
+      bar.right_text = right
+      bar
+    end
+  end
+
+  # Root menu - each entry pushes a demo view onto the stack.
+  class MenuView < DemoView
+    def build_layout
+      @flash = Cursed::Widgets::FlashMessage.new(app)
+
+      @list = Cursed::Widgets::List.new(app)
+      @list.items = [
+        Cursed::Widgets::SeparatorItem.new("\u2501\u2501 CURSED DEMO \u2501\u2501"),
+        Cursed::Widgets::ActionItem.new('Form widgets (input, toggle, radio, checkbox)') { app.push_view(FormView.new(app)) },
+        Cursed::Widgets::ActionItem.new('Motion (animation, spinners, countdown)') { app.push_view(MotionView.new(app)) },
+        Cursed::Widgets::ActionItem.new('Layout (panels & columns)') { app.push_view(LayoutView.new(app)) },
+        Cursed::Widgets::SeparatorItem.new,
+        Cursed::Widgets::ActionItem.new('Quit', color: :error) { app.quit }
+      ]
+
+      @status = status_bar("\u2191\u2193: Navigate  Enter: Open", 'MENU', 'q: Quit')
+      @widgets = [@flash, @list, @status]
+      @list.focus
+    end
+
+    def handle_key(ch)
+      return true if super
+      return (app.quit || true) if ch == 'q'.ord
+
+      false
+    end
+
+    def handle_escape
+      app.quit
+      true
+    end
+  end
+
+  # Form: the focusable widgets, stitched together with events.
+  class FormView < DemoView
+    def build_layout
+      @flash = Cursed::Widgets::FlashMessage.new(app)
+
+      @name    = Cursed::Widgets::TextInput.new(app, placeholder: 'your name')
+      @notify  = Cursed::Widgets::Toggle.new(app, label: 'Notifications', value: true)
+      @theme   = Cursed::Widgets::RadioGroup.new(app, options: [
+                                                   { value: :light, label: 'Light' },
+                                                   { value: :dark,  label: 'Dark' },
+                                                   { value: :auto,  label: 'Auto' }
+                                                 ])
+      @feats   = Cursed::Widgets::CheckboxGroup.new(app, options: [
+                                                     { value: :sync, label: 'Cloud sync' },
+                                                     { value: :beta, label: 'Beta features' }
+                                                   ])
+      @preview = Cursed::Widgets::Label.new(app, text: 'Hello, stranger', color: :dim)
+      @save    = Cursed::Widgets::Button.new(app, label: 'Save', color: :success)
+
+      # Wire the pieces together purely through events.
+      @name.on(:change)   { |t| @preview.text = "Hello, #{t.empty? ? 'stranger' : t}" }
+      @notify.on(:change) { |on| @feats.visible = on }
+      @theme.on(:change)  { |v| flash_info("Theme: #{v}") }
+      @save.on(:press)    { flash_success("Saved #{@name.text.empty? ? '(anon)' : @name.text}"); app.pop_view }
+
+      panel = Cursed::Widgets::Panel.new(app, title: 'Settings', color: :info).add(
+        Cursed::Widgets::Label.new(app, text: 'Name', color: :info), @name,
+        Cursed::Widgets::Label.new(app, text: 'Theme', color: :info), @theme,
+        @notify,
+        Cursed::Widgets::Label.new(app, text: 'Features', color: :info), @feats,
+        @preview, @save
+      )
+
+      @status = status_bar('Tab: Field  Space/Enter: Act', 'FORM', 'ESC: Back')
+      @widgets = [@flash, panel, @status]
+      @name.focus
+    end
+  end
+
+  # Motion: animation + spinners that resolve on a countdown.
+  class MotionView < DemoView
+    def build_layout
+      @flash = Cursed::Widgets::FlashMessage.new(app)
+
+      @anim = Cursed::Animator.new(app, color: :info)
+      @anim << Cursed::Sprites::Sample.plane     # plays once
+      @anim << Cursed::Sprites::Sample.spinner
+      @anim.on(:complete) { @anim.play(:spinner) } # plane lands -> spin
+
+      @s1 = Cursed::Widgets::Spinner.new(app, label: 'connecting to host')
+      @s2 = Cursed::Widgets::Spinner.new(app, label: 'verifying checksum')
+      @count = Cursed::Widgets::Countdown.new(app, seconds: 3, format: ->(r) { "resolving in #{r}s\u2026" })
+      @count.on(:expire) do
+        @s1.complete!(:success)
+        @s2.complete!(:failure)
+        flash_info('Spinners resolved')
+      end
+
+      @status = status_bar('(animating)', 'MOTION', 'ESC: Back')
+      @widgets = [@flash, @anim, @s1, @s2, @count, @status]
+    end
+  end
+
+  # Layout: two panels side by side in an HBox.
+  class LayoutView < DemoView
+    def build_layout
+      left = Cursed::Widgets::Panel.new(app, title: 'Left', color: :info).add(
+        Cursed::Widgets::Label.new(app, text: 'Column one'),
+        Cursed::Widgets::Label.new(app, text: 'stacked'),
+        Cursed::Widgets::Label.new(app, text: 'vertically')
+      )
+      right = Cursed::Widgets::Panel.new(app, title: 'Right', color: :success).add(
+        Cursed::Widgets::Label.new(app, text: 'Column two'),
+        Cursed::Widgets::Label.new(app, text: 'beside the first')
+      )
+      @columns = Cursed::Widgets::HBox.new(app, spacing: 1).add(left, right)
+
+      @status = status_bar('', 'LAYOUT', 'ESC: Back')
+      @widgets = [@columns, @status]
+    end
+  end
+end
+
+if __FILE__ == $PROGRAM_NAME
+  begin
+    app = Cursed::Application.new
+    app.tick_interval = 40 # ~25fps so animation/countdowns advance
+    app.run(CursedDemo::MenuView.new(app))
+  rescue Interrupt
+    puts "\nInterrupted."
+    exit 130
+  rescue StandardError => e
+    warn "Error: #{e.message}"
+    warn e.backtrace if ENV['DEBUG']
+    exit 1
+  end
+end

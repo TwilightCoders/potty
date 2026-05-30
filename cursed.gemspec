@@ -17,7 +17,9 @@ Gem::Specification.new do |spec|
   spec.metadata['homepage_uri'] = spec.homepage
   spec.metadata['source_code_uri'] = 'https://github.com/TwilightCoders/cursed'
 
-  spec.files = Dir.glob('{lib,examples}/**/*') + %w[LICENSE.txt README.md]
+  spec.files = (Dir.glob('{lib,examples,bin}/**/*') + %w[LICENSE.txt README.md]).select { |f| File.file?(f) }
+  spec.bindir = 'bin'
+  spec.executables = ['cursed_demo']
   spec.require_paths = ['lib']
 
   spec.add_dependency 'curses', '~> 1.4'
