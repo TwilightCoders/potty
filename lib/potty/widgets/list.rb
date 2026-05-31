@@ -10,6 +10,9 @@ module Potty
     # Scrollable list widget with heterogeneous items.
     # Emits :select(item) on cursor move and :activate(item) on Enter.
     class List < Base
+      BORDER_ROWS = 2  # rows the always-on box adds to the list's height
+      MIN_HEIGHT  = 10 # don't collapse below this even with few items
+
       attr_reader :items
       attr_accessor :on_select, :on_activate
 
@@ -40,8 +43,8 @@ module Potty
         true
       end
 
-      def preferred_height(width)
-        [@items.size + 2, 10].max  # Items + borders, minimum 10
+      def preferred_height(_width)
+        [@items.size + BORDER_ROWS, MIN_HEIGHT].max
       end
 
       def render(window)
@@ -93,8 +96,13 @@ module Potty
 
       private
 
+      # List owns an always-on box (it's intrinsic, not focus chrome), but it
+      # still recolors on focus like the FocusStyle widgets do: the theme's
+      # focus_color when focused, the plain :normal baseline otherwise (so
+      # existing apps look unchanged until the list takes focus).
       def draw_border(window)
-        Border.draw(window, @rect, attr: theme.style(:normal))
+        color = @focused ? focus_style.focus_color : :normal
+        Border.draw(window, @rect, attr: theme.style(color))
       end
 
       def render_item(window, item, index, y, x)
