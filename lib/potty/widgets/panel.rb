@@ -7,6 +7,10 @@ module Potty
   module Widgets
     # A bordered, optionally titled container. Stacks its children
     # vertically inside a one-cell border frame.
+    #
+    # `spacing` is the number of blank rows *between* stacked children (a
+    # vertical gap), NOT inner padding around the frame — children sit flush
+    # against the one-cell border. Default 0 (children touch).
     class Panel < Container
       attr_accessor :title, :style, :color
 

@@ -4,6 +4,78 @@ All notable changes to potty are documented here. The format is loosely based
 on [Keep a Changelog](https://keepachangelog.com/), and the project follows
 [Semantic Versioning](https://semver.org/).
 
+## [Unreleased]
+
+### Added
+- **Styleable focus chrome (`FocusStyle`)** — potty's `:focus` stylesheet rule.
+  A pure-data, surface-agnostic decoration spec (sibling to `Style`) that says
+  how a focusable widget shows focus and whether it carries a border, with
+  composable knobs: `border`/`focus_border` (box that recolors on focus —
+  `.boxed` keeps the same weight by default, `focus: :heavy` to thicken too),
+  `marker` (left-gutter indicator), `fill` (focused-field background), plus the
+  colours for each. Resolved per widget against the `Theme` (the global look)
+  or a per-widget `focus_style=` override — the CSS model: focus is a property
+  of the element, not a wrapper (`Panel`/`VBox` remain the way to *group*).
+  Presets: `FocusStyle.boxed` / `.gutter` / `.filled` / `.none`. Geometry is
+  reserved from the static config, never from focus state, so focusing never
+  reflows the layout. Chrome applies to focusable widgets only (a global boxed
+  style won't box a `Label`). Default is `FocusStyle.none` — existing apps
+  render unchanged; opt in via `Theme.new(palette, FocusStyle.boxed)` or
+  `theme.focus_style = …`.
+- **Hardware text cursor** — `Surface#place_cursor(row, col, shape:)` lets a
+  widget request the real terminal cursor at a cell for one frame (cleared each
+  `erase`, so a frame with no request hides it). `TextInput` uses it: a focused
+  field now shows a genuine blinking caret instead of a faked reverse-video
+  block. Shape (`:bar` / `:block` / `:underline`, default `:bar`) is honoured
+  on `InlineSurface` via DECSCUSR; `CursesSurface` falls back to cursor
+  visibility (curses exposes no shape control). `TextInput.new(cursor_shape:)`
+  picks the shape. Windows without `place_cursor` (e.g. test fakes) degrade
+  silently.
+- **Terminal resize handling** — `CursesSurface` reacts to `KEY_RESIZE`:
+  `Application#resize` re-reads the screen dimensions (`Surface#handle_resize`)
+  and re-lays-out the current view, so a full-screen curses app reflows on
+  window resize. `InlineSurface#handle_resize` re-detects width and rebuilds the
+  grid (not auto-driven — inline has no resize key; a host trapping SIGWINCH can
+  call it).
+- `CheckboxGroup#selected=` — replace the whole selection set programmatically
+  (the hook for a "master" / select-all row driving its individual rows from
+  outside, without reaching into internal state). Ignores unknown values and
+  order/dupes; fires `:change` only when the set actually changes, so a
+  master↔individuals wiring can't loop.
+- **`TextBlock` widget** — static multi-line text from a `String` with newlines
+  (height = line count). `wrap: false` renders verbatim (preformatted art /
+  tables); `wrap: true` word-wraps to the rect width (prose, log tails, error
+  messages). The block sibling of `Label`.
+- **Modal `pop_view` results** — `push_view(view, on_result:)` + `pop_view(result)`:
+  push a child, get a value back when it closes (callback fires in the pusher's
+  context); a bare pop / ESC delivers `nil` (cancelled). No blocking.
+- **`Application#schedule(after_seconds) { … }`** — run a block once after a
+  delay on the tick clock; returns a `ScheduledTask` you can `cancel`. Clock
+  starts on the first tick (robust to a late first frame), deterministic to
+  test (`tick(now)` takes an explicit Time).
+
+### Changed
+- **Default focus look is now `FocusStyle.gutter`** (was effectively none) — a
+  form shows where focus is out of the box (a left-gutter marker; chrome-light,
+  adds no height, no reflow). Pass `FocusStyle.none` for the previous bare look,
+  or `.boxed` / `.filled` for more. Affects any widget tree built on a default
+  `Theme.new`.
+
+### Fixed
+- **Nil surface during `build_layout`** — `build_layout` now runs on a view's
+  first `#activate` (once the Application has built the surface) instead of at
+  construction, so reading `app.surface.size` / theme during layout no longer
+  nils out. (A view test now calls `view.activate(app)` before asserting on its
+  widgets.)
+- **Ghost fragments after a view transition** — popping/pushing to a shorter
+  view (or resizing) could leave stale cells on screen when the old view drew
+  wide / multi-byte glyphs (block elements, box drawing), because ncurses'
+  damage tracking doesn't always mark those cells dirty. `Surface#force_repaint!`
+  arms a one-shot full repaint (curses uses `wclear` for that frame instead of
+  `werase`); `Application` calls it on `push_view`/`pop_view`/`resume`/`resize`.
+  Per-frame rendering still uses damage-tracked `erase`, so animation doesn't
+  strobe. `InlineSurface` is unaffected (it rewrites every row each frame).
+
 ## [0.0.2] - 2026-05-30
 
 ### Added

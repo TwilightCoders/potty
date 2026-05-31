@@ -6,7 +6,10 @@ require_relative '../keys'
 module Potty
   module Widgets
     # Focusable push button. Space/Enter fires :press. Pass on_press: for a
-    # one-liner, or wire it with button.on(:press) { ... }.
+    # one-liner, or wire it with button.on(:press) { ... }. Either way the
+    # callback receives the button as its argument (the :press payload), so
+    # write `->(btn) { … }` (or `->(_btn) { … }` if you don't need it) — a
+    # zero-arg `-> { … }` lambda will raise on the extra arg.
     class Button < Base
       attr_accessor :label, :color
 
