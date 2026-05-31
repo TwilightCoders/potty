@@ -30,9 +30,7 @@ module Potty
         1
       end
 
-      def render(window)
-        return unless @rect
-
+      def draw(window)
         # Auto-clear if timed out
         if @message && @timeout && Time.now > @timeout
           clear

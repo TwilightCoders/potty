@@ -53,9 +53,7 @@ module Potty
         # no-op
       end
 
-      def render(window)
-        return unless @visible && @rect
-
+      def draw(window)
         @children.each { |child| child.render(window) if child.visible? }
       end
 

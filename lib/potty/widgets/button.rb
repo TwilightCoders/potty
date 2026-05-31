@@ -42,10 +42,7 @@ module Potty
         end
       end
 
-      def render(window)
-        return unless @visible && @rect
-
-        draw_focus_chrome(window)
+      def draw(window)
         rect = content_rect
         text = "[ #{@label} ]"[0, rect.width]
         attr = @focused ? theme.style(:selected, bold: true) : theme.style(@color)

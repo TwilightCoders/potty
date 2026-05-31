@@ -35,9 +35,7 @@ module Potty
         lines(width).size
       end
 
-      def render(window)
-        return unless @visible && @rect
-
+      def draw(window)
         rows = lines(@rect.width)
         rows.each_with_index do |line, i|
           break if i >= @rect.height

@@ -93,8 +93,8 @@ module Potty
       advance(steps)
     end
 
-    def render(window)
-      return unless @visible && @rect && sprite
+    def draw(window)
+      return unless sprite
 
       attr = theme[@color]
       sprite.frame_lines(@frame_index).each_with_index do |line, row|

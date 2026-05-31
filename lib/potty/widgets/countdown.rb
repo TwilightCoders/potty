@@ -68,9 +68,7 @@ module Potty
         fire_expire(self)
       end
 
-      def render(window)
-        return unless @visible && @rect
-
+      def draw(window)
         text = @format.call(remaining).to_s[0, @rect.width]
         window.setpos(@rect.y, @rect.x)
         window.attron(theme.style(:warning)) { window.addstr(text) }

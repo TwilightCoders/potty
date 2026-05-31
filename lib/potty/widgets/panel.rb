@@ -42,11 +42,9 @@ module Potty
         @children.zip(rects).each { |child, rect| child.layout(rect) }
       end
 
-      def render(window)
-        return unless @visible && @rect
-
+      def draw(window)
         Border.draw(window, @rect, style: @style, attr: theme.style(@color), title: @title)
-        super # render children inside the frame
+        super # Container#draw renders children inside the frame
       end
     end
   end

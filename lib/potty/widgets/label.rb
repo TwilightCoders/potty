@@ -25,9 +25,7 @@ module Potty
         1
       end
 
-      def render(window)
-        return unless @visible && @rect
-
+      def draw(window)
         attr = theme.style(@color, bold: @bold)
         window.setpos(@rect.y, @rect.x)
         window.attron(attr) { window.addstr(@text.to_s[0, @rect.width] || '') }

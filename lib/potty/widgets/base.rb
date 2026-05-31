@@ -52,9 +52,23 @@ module Potty
         # Override for custom layout logic
       end
 
-      # Rendering
+      # Rendering — the frame template. Callers invoke #render; it guards
+      # visibility + geometry, paints focus chrome (a no-op for non-focusable
+      # widgets and for a `none` focus_style), then hands off to #draw for the
+      # widget's own content. Widgets override #draw, NOT #render — so the
+      # visible/rect guard and the draw_focus_chrome call live in one place
+      # instead of being repeated at the top of every widget.
+      # (List overrides #render directly: it manages its own always-on frame.)
       def render(window)
         return unless @visible && @rect
+
+        draw_focus_chrome(window)
+        draw(window)
+      end
+
+      # Paint widget content. Called by #render only when visible with a rect,
+      # after any focus chrome. Override in subclasses.
+      def draw(window)
         # Override in subclasses
       end
 

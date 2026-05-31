@@ -67,10 +67,7 @@ module Potty
         true
       end
 
-      def render(window)
-        return unless @visible && @rect
-
-        draw_focus_chrome(window)
+      def draw(window)
         rect = content_rect
         width = rect.width
         adjust_scroll(width)

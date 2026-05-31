@@ -55,9 +55,7 @@ module Potty
         @animator.tick(now) if active?
       end
 
-      def render(window)
-        return unless @visible && @rect
-
+      def draw(window)
         glyph = active? ? current_frame : STATE_GLYPHS.fetch(@state, '?')
         text = truncate("#{@prefix}#{glyph} #{@label}", @rect.width)
         window.setpos(@rect.y, @rect.x)

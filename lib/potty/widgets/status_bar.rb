@@ -19,9 +19,7 @@ module Potty
         1
       end
 
-      def render(window)
-        return unless @rect
-
+      def draw(window)
         window.setpos(@rect.y, @rect.x)
         window.attron(theme.style(:status)) do
           # Clear line with background color
