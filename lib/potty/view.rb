@@ -82,8 +82,14 @@ module Potty
     # To react to ESC, override #handle_escape (return true if you handled it;
     # return false to let the Application pop the view stack).
     def handle_key(ch)
+      # Resolve the focusable set once per keypress (it's rebuilt by recursing
+      # the tree) and reuse it for both delegation and Tab cycling, rather than
+      # rebuilding it 2-3x through focused_widget.
+      focusable = focusable_widgets
+      focused = focusable.find(&:focused)
+
       # Delegate to focused widget first
-      return true if focused_widget&.handle_key(ch)
+      return true if focused&.handle_key(ch)
 
       # Handle view-level keys. Enter advances focus like Tab when the
       # focused widget didn't consume it — so a form flows field -> field ->
@@ -92,10 +98,10 @@ module Potty
       # before delegating to super.
       case ch
       when Keys::TAB, *Keys::ENTERS
-        cycle_focus(1)
+        cycle_focus(focusable, focused, 1)
         true
       when Keys::SHIFT_TAB
-        cycle_focus(-1)
+        cycle_focus(focusable, focused, -1)
         true
       else
         false
@@ -140,17 +146,18 @@ module Potty
       end
     end
 
-    def cycle_focus(delta)
-      focusable = focusable_widgets
+    def cycle_focus(focusable, focused, delta)
       return if focusable.empty?
 
-      current = focusable.index(focused_widget) || 0
+      current = (focused && focusable.index(focused)) || 0
       new_index = (current + delta) % focusable.size
 
-      focused_widget&.blur
+      focused&.blur
       focusable[new_index].focus
     end
 
+    # The currently focused leaf, or nil. Recomputes the focusable set, so the
+    # hot path (handle_key) resolves it once and threads it through instead.
     def focused_widget
       focusable_widgets.find(&:focused)
     end
