@@ -15,6 +15,10 @@ module Potty
     def start; end
     def finalize; end
 
+    # The terminal was resized; refresh any cached dimensions. The Application
+    # calls this, then re-lays-out the current view. No-op by default.
+    def handle_resize; end
+
     # Frame lifecycle: erase the buffer, widgets draw, then present flushes.
     def erase
       raise NotImplementedError

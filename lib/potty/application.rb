@@ -125,12 +125,22 @@ module Potty
           unless current_view&.handle_escape
             pop_view if @view_stack.size > 1
           end
+        when Keys::RESIZE
+          resize
         else
           current_view&.handle_key(ch)
         end
 
         tick
       end
+    end
+
+    # The terminal was resized: refresh the surface's dimensions and re-lay-out
+    # the current view to the new size. The following tick repaints it.
+    def resize
+      @surface.handle_resize
+      @surface.force_repaint! # geometry changed under us — repaint everything
+      current_view&.layout_widgets
     end
 
     def current_view

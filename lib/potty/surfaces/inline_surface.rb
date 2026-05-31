@@ -63,6 +63,15 @@ module Potty
         @out.flush
       end
 
+      # Re-detect the terminal width and rebuild the grid. Inline mode has no
+      # KEY_RESIZE (no curses), so this isn't auto-driven — a host that traps
+      # SIGWINCH can call it; otherwise the width is fixed for the region's
+      # (typically brief) lifetime.
+      def handle_resize
+        @cols = detect_cols
+        erase
+      end
+
       def erase
         self.cursor_request = nil
         @cells = Array.new(@rows) { Array.new(@cols) { [' ', nil] } }

@@ -52,6 +52,12 @@ module Potty
         stdscr.erase
       end
 
+      # ncurses delivered a KEY_RESIZE: stdscr has already been resized, so
+      # just re-read the dimensions. The Application re-lays-out the view.
+      def handle_resize
+        @wm.update_dimensions
+      end
+
       def setpos(row, col)
         stdscr.setpos(row, col)
       end
