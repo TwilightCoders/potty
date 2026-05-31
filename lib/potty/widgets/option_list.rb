@@ -34,12 +34,20 @@ module Potty
 
       # One row per option, the cursor row highlighted. Base#render has already
       # guarded visibility and painted focus chrome; this just paints content.
+      #
+      # Each row is left-justified to rect.width so a shorter row replacing
+      # a longer one (cursor moved, options updated) doesn't leave the
+      # previous row's tail on screen. Mirrors TextInput's ljust pattern;
+      # without it, navigating from "all interfaces (0.0.0.0)" to
+      # "en0 (192.168.1.42)" leaves ".42)" hanging at the right edge.
       def draw(window)
         rect = content_rect
         @options.each_with_index do |opt, i|
           break if i >= rect.height
 
-          text = "#{row_marker(opt)} #{opt[:label]}"[0, rect.width]
+          text = +"#{row_marker(opt)} #{opt[:label]}"
+          text = text.byteslice(0, rect.width).to_s if text.bytesize > rect.width
+          text = text.ljust(rect.width)
           window.setpos(rect.y + i, rect.x)
           window.attron(theme.selection_style(@focused && i == @cursor)) do
             window.addstr(text)
