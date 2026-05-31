@@ -12,11 +12,21 @@ module Potty
       @app = app
       @widgets = []
       @focused_index = 0
-      build_layout
+      @built = false
+      # NOTE: build_layout is deferred to the first #activate (below), NOT run
+      # here. A View is constructed *before* Application#run builds the Surface,
+      # so @app.surface is nil during construction — building layout here means
+      # anything reaching for surface.size / theme during build_layout nils out
+      # at runtime. Deferring guarantees the surface exists first.
     end
 
     def activate(app)
       @app = app
+      # Build the widget tree on first activation, once the surface exists.
+      unless @built
+        build_layout
+        @built = true
+      end
       on_activate
       layout_widgets
     end
@@ -66,6 +76,11 @@ module Potty
       @widgets.each { |widget| widget.tick(now) }
     end
 
+    # NOTE on ESC: the Application's event loop intercepts ESC *upstream* and
+    # routes it to #handle_escape, NOT here — so a `when Keys::ESC` branch in
+    # this method (or a widget's handle_key) is dead code and will never fire.
+    # To react to ESC, override #handle_escape (return true if you handled it;
+    # return false to let the Application pop the view stack).
     def handle_key(ch)
       # Delegate to focused widget first
       return true if focused_widget&.handle_key(ch)

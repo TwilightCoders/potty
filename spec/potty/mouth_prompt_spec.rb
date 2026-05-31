@@ -4,7 +4,17 @@
 # through handle_key the way the event loop would (no TTY / raw I/O involved —
 # that layer is exercised live, like CursesSurface).
 RSpec.describe Potty::Mouth::Prompt do
-  let(:app) { Object.new.tap { |a| def a.quit = nil } }
+  # A surfaced stand-in: build_layout is deferred to #activate (it runs once the
+  # Application has built the surface), so logic tests activate the view first —
+  # the same order the event loop drives it.
+  let(:app) do
+    surf = Object.new
+    surf.define_singleton_method(:size) { [10, 80] }
+    Object.new.tap do |a|
+      a.define_singleton_method(:surface) { surf }
+      a.define_singleton_method(:quit) {}
+    end
+  end
 
   describe 'inline layout (spacing 0 so nothing clips out of the region)' do
     def app_sized(rows)
@@ -35,6 +45,8 @@ RSpec.describe Potty::Mouth::Prompt do
 
   describe Potty::Mouth::Prompt::Ask do
     subject(:view) { described_class.new(app, prompt: 'Name?', default: 'x') }
+
+    before { view.activate(app) }
 
     it 'starts focused on the field with the default text' do
       field = view.instance_variable_get(:@field)
@@ -80,6 +92,8 @@ RSpec.describe Potty::Mouth::Prompt do
   describe Potty::Mouth::Prompt::Choose do
     subject(:view) { described_class.new(app, prompt: 'Pick', options: %i[a b c]) }
 
+    before { view.activate(app) }
+
     it 'returns the cursor option on Enter, after arrowing' do
       view.handle_key(Potty::Keys::DOWN) # a -> b
       view.handle_key(Potty::Keys::ENTER)
@@ -93,6 +107,7 @@ RSpec.describe Potty::Mouth::Prompt do
 
     it 'accepts {value:, label:} options' do
       v = described_class.new(app, prompt: 'Pick', options: [{ value: :x, label: 'X' }, { value: :y, label: 'Y' }])
+      v.activate(app)
       v.handle_key(Potty::Keys::ENTER)
       expect(v.result).to eq(:x)
     end
