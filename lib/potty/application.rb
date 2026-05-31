@@ -39,6 +39,7 @@ module Potty
       @window_manager = (mode == :curses ? WindowManager.new : nil)
       @surface = nil
       @tick_interval = nil
+      @result_handlers = [] # parallels @view_stack: a pop-result callback per pushed view
     end
 
     # Start the application with root view
@@ -53,8 +54,14 @@ module Potty
     end
 
     # View navigation
-    def push_view(view)
+    #
+    # Pass `on_result:` to be called back when this view is later popped with a
+    # result — the modal pattern: push an editor, get its value back when it
+    # closes, without the pusher blocking. The callback runs in the pusher's
+    # context after the parent view is live again.
+    def push_view(view, on_result: nil)
       @view_stack.last&.deactivate
+      @result_handlers.push(on_result)
       @view_stack.push(view)
       view.activate(self)
       # The whole tree changed — force a full repaint so the new (possibly
@@ -63,14 +70,19 @@ module Potty
       refresh_all
     end
 
-    def pop_view
+    # Pop the current view, optionally handing a result back to whoever pushed
+    # it (their `on_result:` callback fires with it). A bare pop (e.g. ESC)
+    # delivers nil — read as "cancelled" by a modal.
+    def pop_view(result = nil)
       return if @view_stack.size <= 1
 
       view = @view_stack.pop
+      handler = @result_handlers.pop
       view.deactivate
       @view_stack.last&.activate(self)
       @surface&.force_repaint!
       refresh_all
+      handler&.call(result)
     end
 
     def quit
