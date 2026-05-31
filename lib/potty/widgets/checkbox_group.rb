@@ -55,45 +55,20 @@ module Potty
         @options.size + chrome_height
       end
 
-      def handle_key(ch)
-        case ch
-        when Keys::UP
-          move(-1)
-        when Keys::DOWN
-          move(1)
-        when Keys::SPACE, *Keys::ENTERS
-          toggle(@cursor)
-        else
-          return false
-        end
-        true
-      end
-
-      def render(window)
-        return unless @visible && @rect
-
-        draw_focus_chrome(window)
-        rect = content_rect
-        @options.each_with_index do |opt, i|
-          break if i >= rect.height
-
-          mark = selected?(opt[:value]) ? "[\u2713]" : "[ ]"
-          on_cursor = @focused && i == @cursor
-          attr = on_cursor ? theme.style(:selected, bold: true) : theme.style(:normal)
-          window.setpos(rect.y + i, rect.x)
-          window.attron(attr) { window.addstr("#{mark} #{opt[:label]}"[0, rect.width]) }
-        end
-      end
-
       private
 
-      def toggle(idx)
+      # OptionList hooks.
+      def commit_at(idx)
         opt = @options[idx]
         return unless opt
 
         value = opt[:value]
         selected?(value) ? @selected.delete(value) : (@selected << value)
         fire_change(selected)
+      end
+
+      def row_marker(opt)
+        selected?(opt[:value]) ? "[\u2713]" : "[ ]"
       end
     end
   end

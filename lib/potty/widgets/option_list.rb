@@ -1,19 +1,50 @@
 # frozen_string_literal: true
 
+require_relative '../keys'
+
 module Potty
   module Widgets
-    # Shared option-list behavior for the single-select RadioGroup and the
-    # multi-select CheckboxGroup: a normalized list of { value:, label: }
-    # options plus a navigable cursor. The including widget owns the selection
-    # semantics (one committed value vs. a set of them); this models only the
-    # options and the highlighted row, which both do identically.
+    # Shared behavior for the single-select RadioGroup and the multi-select
+    # CheckboxGroup: a normalized list of { value:, label: } options, a
+    # navigable cursor, and the (identical) key handling and row rendering.
+    # The including widget supplies only its selection semantics, via two
+    # hooks:
     #
-    # Expects the includer to maintain @options (set via #normalize) and an
-    # integer @cursor.
+    #   commit_at(index)  - act on the option under the cursor (Space/Enter)
+    #   row_marker(opt)   - the leading glyph for a row, e.g. "(●)" / "[ ]"
+    #
+    # Expects the includer (a Widgets::Base subclass) to maintain @options
+    # (built via #normalize) and an integer @cursor; it provides everything
+    # else — handle_key, draw, move, normalize, index_of.
     module OptionList
       # The normalized options ({ value:, label: } hashes).
       def options
         @options
+      end
+
+      def handle_key(ch)
+        case ch
+        when Keys::UP then move(-1)
+        when Keys::DOWN then move(1)
+        when Keys::SPACE, *Keys::ENTERS then commit_at(@cursor)
+        else return false
+        end
+        true
+      end
+
+      # One row per option, the cursor row highlighted. Base#render has already
+      # guarded visibility and painted focus chrome; this just paints content.
+      def draw(window)
+        rect = content_rect
+        @options.each_with_index do |opt, i|
+          break if i >= rect.height
+
+          text = "#{row_marker(opt)} #{opt[:label]}"[0, rect.width]
+          window.setpos(rect.y + i, rect.x)
+          window.attron(theme.selection_style(@focused && i == @cursor)) do
+            window.addstr(text)
+          end
+        end
       end
 
       private
