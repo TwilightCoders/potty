@@ -53,4 +53,40 @@ RSpec.describe Potty::Widgets::CheckboxGroup do
   it 'reports preferred_height as option count' do
     expect(group.preferred_height(80)).to eq(3)
   end
+
+  describe '#selected= (master / select-all hook)' do
+    it 'replaces the whole selection set' do
+      group.selected = %i[a c]
+      expect(group.selected).to eq(%i[a c])
+      group.selected = []
+      expect(group.selected).to eq([])
+    end
+
+    it 'ignores unknown values, duplicates, and order' do
+      group.selected = [:c, :a, :a, :nope]
+      expect(group.selected).to match_array(%i[a c])
+    end
+
+    it 'fires :change once when the set changes' do
+      seen = []
+      group.on(:change) { |sel| seen << sel }
+      group.selected = %i[a b]
+      expect(seen).to eq([%i[a b]])
+    end
+
+    it 'is a no-op (no :change) when the set is unchanged' do
+      group.selected = %i[a b]
+      seen = []
+      group.on(:change) { |sel| seen << sel }
+      group.selected = %i[b a] # same set, different order
+      expect(seen).to be_empty
+    end
+
+    it 'calls the on_change callback too' do
+      seen = []
+      g = described_class.new(app, options: options, on_change: ->(sel) { seen << sel })
+      g.selected = [:b]
+      expect(seen).to eq([[:b]])
+    end
+  end
 end

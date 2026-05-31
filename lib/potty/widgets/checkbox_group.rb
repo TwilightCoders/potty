@@ -33,6 +33,22 @@ module Potty
         @selected.dup
       end
 
+      # Replace the whole selection set programmatically — the hook for a
+      # "master" / "select all" row driving its individual rows from outside,
+      # without reaching into @selected. Pass the values to select (`[]` to
+      # clear); unknown values and order/duplicates are ignored. Fires
+      # :change (and on_change) like an interactive toggle, but only when the
+      # set actually changes, so a master<->individuals wiring can't loop.
+      def selected=(values)
+        valid = @options.map { |o| o[:value] }
+        next_sel = Array(values).uniq.select { |v| valid.include?(v) }
+        return if (next_sel - @selected).empty? && (@selected - next_sel).empty?
+
+        @selected = next_sel
+        @on_change&.call(selected)
+        emit(:change, selected)
+      end
+
       def selected?(value)
         @selected.include?(value)
       end
