@@ -17,6 +17,7 @@ module Potty
     #
     # Not focusable; carries no chrome (like Label).
     class TextBlock < Base
+      attr_reader :text
       attr_accessor :color, :wrap
 
       def initialize(app, text: '', color: :normal, wrap: false)
@@ -24,10 +25,6 @@ module Potty
         @text = text.to_s
         @color = color
         @wrap = wrap
-      end
-
-      def text
-        @text
       end
 
       def text=(value)
