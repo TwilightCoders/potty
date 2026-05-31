@@ -8,6 +8,7 @@ require_relative 'keys'
 require_relative 'surface'
 require_relative 'surfaces/curses_surface'
 require_relative 'surfaces/inline_surface'
+require_relative 'scheduled_task'
 
 module Potty
   # Main application wrapper: owns the view stack, the tick loop, and a
@@ -40,6 +41,7 @@ module Potty
       @surface = nil
       @tick_interval = nil
       @result_handlers = [] # parallels @view_stack: a pop-result callback per pushed view
+      @timers = []          # active ScheduledTasks pumped each tick
     end
 
     # Start the application with root view
@@ -96,11 +98,24 @@ module Potty
     end
     alias redraw refresh_all
 
+    # Run a block once after `after_seconds`, on the tick clock. Returns a
+    # ScheduledTask you can #cancel before it fires. Needs a tick_interval (the
+    # loop must be ticking). Good for timeouts / auto-actions (e.g. a recovery
+    # curtain's auto-restore) without hand-rolling elapsed-time bookkeeping in
+    # a view's #tick.
+    def schedule(after_seconds, &block)
+      task = ScheduledTask.new(after_seconds, block)
+      @timers << task
+      task
+    end
+
     # Advance time-based widgets and repaint. Called automatically each
     # event-loop frame; also public so a host that drives its own loop can
-    # pump animation/countdowns itself.
-    def tick
-      current_view&.tick(Time.now)
+    # pump animation/countdowns itself. `now` is injectable for deterministic
+    # tests; it defaults to a single Time.now read shared across the frame.
+    def tick(now = Time.now)
+      fire_due_timers(now)
+      current_view&.tick(now)
       refresh_all
     end
 
@@ -158,6 +173,11 @@ module Potty
       @surface.handle_resize
       @surface.force_repaint! # geometry changed under us — repaint everything
       current_view&.layout_widgets
+    end
+
+    # Fire (and drop) any timers due as of `now`; also drops cancelled ones.
+    def fire_due_timers(now)
+      @timers.reject! { |task| task.tick(now) }
     end
 
     def current_view
