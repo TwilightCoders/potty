@@ -2,6 +2,7 @@
 
 require 'curses'
 require_relative 'style'
+require_relative 'focus_style'
 
 module Potty
   # Theme maps semantic names to a render-target-agnostic Style (symbolic
@@ -43,9 +44,24 @@ module Potty
 
     attr_reader :palette
 
-    # Pass a partial palette ({ name => { fg:, bg: } }) to override entries.
-    def initialize(palette = nil)
+    # The focus / field-chrome stylesheet rule applied to focusable widgets
+    # (border, gutter marker, fill). Defaults to no chrome — opt in here for a
+    # global look, or override per widget. See FocusStyle.
+    attr_accessor :focus_style
+
+    # Pass a partial palette ({ name => { fg:, bg: } }) to override entries, and
+    # optionally a FocusStyle for the global focus look. focus_style is
+    # positional (not a keyword) so the legacy `Theme.new(name: {...})` palette
+    # call — which slurps a trailing hash into `palette` — keeps working; it's
+    # also settable after construction via #focus_style=.
+    def initialize(palette = nil, focus_style = nil)
       @palette = palette ? PALETTE.merge(palette) : PALETTE
+      # Default to a visible focus affordance (a left-gutter marker) so a form
+      # looks like a working app out of the box — you always see where focus
+      # is. It's chrome-light and adds no height (the marker lives in a
+      # reserved gutter column, no reflow). Pass FocusStyle.none for the bare
+      # look, or .boxed / .filled for more.
+      @focus_style = focus_style || FocusStyle.gutter
     end
 
     # Semantic style — symbolic colours + attributes, resolved by a Surface.

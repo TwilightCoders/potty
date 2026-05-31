@@ -37,7 +37,7 @@ module Potty
       end
 
       def preferred_height(_width)
-        1
+        1 + chrome_height
       end
 
       def handle_key(ch)
@@ -53,11 +53,13 @@ module Potty
       def render(window)
         return unless @visible && @rect
 
+        draw_focus_chrome(window)
+        rect = content_rect
         knob = @value ? "[\u25CF]" : "[\u25CB]"
-        text = "#{knob} #{@label}"[0, @rect.width]
+        text = "#{knob} #{@label}"[0, rect.width]
         attr = @focused ? theme.style(:selected, bold: true) : theme.style(:normal)
 
-        window.setpos(@rect.y, @rect.x)
+        window.setpos(rect.y, rect.x)
         window.attron(attr) { window.addstr(text) }
       end
     end

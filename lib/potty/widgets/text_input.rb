@@ -14,13 +14,14 @@ module Potty
     # Emits :change(text) on every edit. ASCII input only for now (matches
     # the rest of the framework); UTF-8 entry would need multibyte getch.
     class TextInput < Base
-      attr_accessor :placeholder, :on_change
+      attr_accessor :placeholder, :on_change, :cursor_shape
 
-      def initialize(app, text: '', placeholder: '', max_length: nil, on_change: nil)
+      def initialize(app, text: '', placeholder: '', max_length: nil, on_change: nil, cursor_shape: :bar)
         super(app)
         @editor = LineEditor.new(text, max_length: max_length)
         @placeholder = placeholder
         @on_change = on_change
+        @cursor_shape = cursor_shape
         @scroll = 0
       end
 
@@ -46,7 +47,7 @@ module Potty
       end
 
       def preferred_height(_width)
-        1
+        1 + chrome_height
       end
 
       def handle_key(ch)
@@ -67,11 +68,13 @@ module Potty
       def render(window)
         return unless @visible && @rect
 
-        width = @rect.width
+        draw_focus_chrome(window)
+        rect = content_rect
+        width = rect.width
         adjust_scroll(width)
 
         if text.empty? && !@focused
-          window.setpos(@rect.y, @rect.x)
+          window.setpos(rect.y, rect.x)
           window.attron(theme.style(:dim)) do
             window.addstr(@placeholder.to_s[0, width].to_s.ljust(width))
           end
@@ -79,23 +82,35 @@ module Potty
         end
 
         visible = (text[@scroll, width] || '').ljust(width)
-        window.setpos(@rect.y, @rect.x)
-        window.attron(theme.style(:normal)) { window.addstr(visible) }
+        window.setpos(rect.y, rect.x)
+        window.attron(field_style) { window.addstr(visible) }
 
         return unless @focused
 
-        # Block cursor: reverse-video the cell under the caret.
+        # Place the real hardware text cursor at the caret. The surface shows
+        # it on present (and hides it when no widget asks), so the focused
+        # field gets a genuine blinking caret in the requested shape rather
+        # than a faked reverse-video cell. Duck-typed windows that don't
+        # support it (e.g. test fakes) simply skip the caret.
         col = @editor.cursor - @scroll
         return if col.negative? || col >= width
+        return unless window.respond_to?(:place_cursor)
 
-        char_under = text[@editor.cursor] || ' '
-        window.setpos(@rect.y, @rect.x + col)
-        window.attron(theme.style(:normal, reverse: true)) do
-          window.addstr(char_under)
-        end
+        window.place_cursor(rect.y, rect.x + col, shape: @cursor_shape)
       end
 
       private
+
+      # The style the field text renders in. When the focus_style asks for a
+      # fill and we're focused, the whole (ljust-padded) field paints in the
+      # fill colour so an empty focused field is still visibly "lit"; otherwise
+      # plain normal text.
+      def field_style
+        fs = focus_style
+        return theme.style(fs.fill_color) if @focused && fs.fill
+
+        theme.style(:normal)
+      end
 
       def changed(did_change)
         notify_change if did_change

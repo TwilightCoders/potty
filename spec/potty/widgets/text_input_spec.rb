@@ -77,4 +77,55 @@ RSpec.describe Potty::Widgets::TextInput do
   it 'returns false for unhandled keys' do
     expect(input.handle_key(Curses::Key::F1)).to be(false)
   end
+
+  describe 'hardware cursor on render' do
+    # A fake app/theme/window just rich enough to render against; the window
+    # records place_cursor calls so we can assert the caret request.
+    let(:theme) do
+      Object.new.tap do |t|
+        def t.style(_key, **_opts) = 0
+      end
+    end
+    let(:render_app) do
+      th = theme
+      Object.new.tap { |a| a.define_singleton_method(:theme) { th } }
+    end
+    let(:window) do
+      Object.new.tap do |w|
+        w.instance_variable_set(:@cursors, [])
+        def w.cursors = @cursors
+        def w.setpos(_y, _x) = nil
+        def w.addstr(_s) = nil
+        def w.attron(_a) = (yield if block_given?)
+        def w.place_cursor(row, col, shape:) = @cursors << [row, col, shape]
+      end
+    end
+    let(:rect) { Potty::Layout::Rect.new(4, 1, 10, 1) } # Rect.new(x, y, w, h)
+    subject(:field) { described_class.new(render_app, text: 'hi', cursor_shape: :bar) }
+
+    it 'requests the hardware cursor at the caret when focused' do
+      field.focus
+      field.layout(rect)
+      field.render(window)
+      # place_cursor(row = rect.y, col = rect.x + caret); caret sits past "hi"
+      expect(window.cursors).to eq([[1, 6, :bar]])
+    end
+
+    it 'does not request a cursor when unfocused' do
+      field.layout(rect)
+      field.render(window)
+      expect(window.cursors).to be_empty
+    end
+
+    it 'degrades silently when the window has no place_cursor' do
+      bare = Object.new.tap do |w|
+        def w.setpos(_y, _x) = nil
+        def w.addstr(_s) = nil
+        def w.attron(_a) = (yield if block_given?)
+      end
+      field.focus
+      field.layout(rect)
+      expect { field.render(bare) }.not_to raise_error
+    end
+  end
 end

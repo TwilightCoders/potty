@@ -114,7 +114,12 @@ end
 
 if __FILE__ == $PROGRAM_NAME
   begin
-    app = Potty::Application.new
+    # Show off styleable focus chrome: focused fields get a dim box that
+    # heavies + colours on focus, so you always know where you are. Swap for
+    # FocusStyle.gutter / .filled / .none to feel the other looks.
+    theme = Potty::Theme.new
+    theme.focus_style = Potty::FocusStyle.boxed
+    app = Potty::Application.new(theme: theme)
     app.tick_interval = 40 # ~25fps so animation/countdown advance
     app.run(PottyDemo::Dashboard.new(app))
   rescue Interrupt

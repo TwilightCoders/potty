@@ -60,7 +60,7 @@ module Potty
       end
 
       def preferred_height(_width)
-        @options.size
+        @options.size + chrome_height
       end
 
       def handle_key(ch)
@@ -80,15 +80,17 @@ module Potty
       def render(window)
         return unless @visible && @rect
 
+        draw_focus_chrome(window)
+        rect = content_rect
         @options.each_with_index do |opt, i|
-          break if i >= @rect.height
+          break if i >= rect.height
 
           marker = opt[:value] == @selected ? "(\u25CF)" : "(\u25CB)"
           on_cursor = @focused && i == @cursor
           attr = on_cursor ? theme.style(:selected, bold: true) : theme.style(:normal)
-          text = "#{marker} #{opt[:label]}"[0, @rect.width]
+          text = "#{marker} #{opt[:label]}"[0, rect.width]
 
-          window.setpos(@rect.y + i, @rect.x)
+          window.setpos(rect.y + i, rect.x)
           window.attron(attr) { window.addstr(text) }
         end
       end
