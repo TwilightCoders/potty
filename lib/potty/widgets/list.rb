@@ -114,7 +114,7 @@ module Potty
         window.setpos(y, x)
 
         # Selection prefix
-        prefix_attr = is_selected && @focused ? theme.style(:selected, bold: true) : theme.style(:normal)
+        prefix_attr = theme.selection_style(is_selected && @focused)
         window.attron(prefix_attr) do
           prefix = is_selected ? "\u2192 " : "  "
           window.addstr(prefix)

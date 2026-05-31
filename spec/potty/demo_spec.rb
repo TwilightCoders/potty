@@ -26,6 +26,7 @@ RSpec.describe 'bin/potty_demo' do
       def theme.style(_n, **_o) = Potty::Style.new(fg: :default, bg: :default)
       def theme.[](_k) = 0
       def theme.attr(_k, **_o) = 0
+      def theme.selection_style(_sel) = Potty::Style.new(fg: :default, bg: :default)
       a.define_singleton_method(:theme) { theme }
       a.define_singleton_method(:surface) { surf }
       a.define_singleton_method(:quit) {}

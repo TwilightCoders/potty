@@ -58,7 +58,7 @@ module Potty
         rect = content_rect
         knob = @value ? "[\u25CF]" : "[\u25CB]"
         text = "#{knob} #{@label}"[0, rect.width]
-        attr = @focused ? theme.style(:selected, bold: true) : theme.style(:normal)
+        attr = theme.selection_style(@focused)
 
         window.setpos(rect.y, rect.x)
         window.attron(attr) { window.addstr(text) }

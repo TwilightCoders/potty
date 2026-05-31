@@ -79,5 +79,13 @@ module Potty
     def attr(name, bold: false, underline: false)
       style(name, bold: bold, underline: underline)
     end
+
+    # The style for a row given whether it's the highlighted/selected one — the
+    # single home for "selected looks like :selected + bold, the rest :normal".
+    # Widgets decide *which* row is selected (mechanical, theirs); the theme
+    # decides how selected vs. unselected *looks* (style, here).
+    def selection_style(selected)
+      selected ? style(:selected, bold: true) : style(:normal)
+    end
   end
 end
