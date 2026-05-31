@@ -9,8 +9,10 @@ module Potty
     # Renders "[\u25CF] label" when on, "[\u25CB] label" when off.
     # Emits :change(value) when toggled.
     class Toggle < Base
+      emits :change
+
       attr_reader :value
-      attr_accessor :label, :on_change
+      attr_accessor :label
 
       def initialize(app, label: '', value: false, on_change: nil)
         super(app)
@@ -28,8 +30,7 @@ module Potty
         return if val == @value
 
         @value = val
-        @on_change&.call(@value)
-        emit(:change, @value)
+        fire_change(@value)
       end
 
       def toggle

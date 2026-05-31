@@ -13,7 +13,7 @@ module Potty
     class CheckboxGroup < Base
       include OptionList
 
-      attr_accessor :on_change
+      emits :change
 
       def initialize(app, options: [], selected: [], on_change: nil)
         super(app)
@@ -44,8 +44,7 @@ module Potty
         return if (next_sel - @selected).empty? && (@selected - next_sel).empty?
 
         @selected = next_sel
-        @on_change&.call(selected)
-        emit(:change, selected)
+        fire_change(selected)
       end
 
       def selected?(value)
@@ -94,8 +93,7 @@ module Potty
 
         value = opt[:value]
         selected?(value) ? @selected.delete(value) : (@selected << value)
-        @on_change&.call(selected)
-        emit(:change, selected)
+        fire_change(selected)
       end
     end
   end

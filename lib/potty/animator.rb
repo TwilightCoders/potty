@@ -13,8 +13,10 @@ module Potty
   # event loop supplies `now`; tests can supply it too, which makes the whole
   # thing deterministic.
   class Animator < Widgets::Base
+    emits :complete
+
     attr_reader :current, :frame_index
-    attr_accessor :color, :on_complete, :centered
+    attr_accessor :color, :centered
 
     def initialize(app, color: :normal, centered: false)
       super(app)
@@ -116,8 +118,7 @@ module Potty
         if @frame_index >= sprite.frame_count - 1
           @frame_index = sprite.frame_count - 1
           @playing = false
-          @on_complete&.call(self)
-          emit(:complete, self)
+          fire_complete(self)
         end
       else # :loop
         @frame_index = (@frame_index + steps) % sprite.frame_count

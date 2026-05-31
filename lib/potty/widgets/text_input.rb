@@ -14,7 +14,9 @@ module Potty
     # Emits :change(text) on every edit. ASCII input only for now (matches
     # the rest of the framework); UTF-8 entry would need multibyte getch.
     class TextInput < Base
-      attr_accessor :placeholder, :on_change, :cursor_shape
+      emits :change
+
+      attr_accessor :placeholder, :cursor_shape
 
       def initialize(app, text: '', placeholder: '', max_length: nil, on_change: nil, cursor_shape: :bar)
         super(app)
@@ -128,9 +130,7 @@ module Potty
       def notify_change
         # Hand listeners a snapshot, not the live internal buffer, so a
         # consumer that stores the value doesn't see it mutate underfoot.
-        snapshot = text.dup
-        @on_change&.call(snapshot)
-        emit(:change, snapshot)
+        fire_change(text.dup)
       end
     end
   end

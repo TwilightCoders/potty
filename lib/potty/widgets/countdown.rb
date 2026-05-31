@@ -12,7 +12,7 @@ module Potty
     # The clock starts on the first tick (not at construction), so a
     # Countdown built well before the loop spins up still gets its full N.
     class Countdown < Base
-      attr_accessor :on_expire
+      emits :expire
 
       def initialize(app, seconds:, on_expire: nil, format: nil)
         super(app)
@@ -65,8 +65,7 @@ module Potty
 
         @expired = true
         @running = false
-        @on_expire&.call(self)
-        emit(:expire, self)
+        fire_expire(self)
       end
 
       def render(window)

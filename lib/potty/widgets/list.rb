@@ -13,8 +13,9 @@ module Potty
       BORDER_ROWS = 2  # rows the always-on box adds to the list's height
       MIN_HEIGHT  = 10 # don't collapse below this even with few items
 
+      emits :select, :activate
+
       attr_reader :items
-      attr_accessor :on_select, :on_activate
 
       def initialize(app)
         super
@@ -156,8 +157,7 @@ module Potty
 
         @selected_index = new_index
         adjust_scroll
-        @on_select&.call(@items[@selected_index])
-        emit(:select, @items[@selected_index])
+        fire_select(@items[@selected_index])
       end
 
       def adjust_scroll
@@ -182,8 +182,7 @@ module Potty
         item = @items[@selected_index]
         return if item.disabled?
 
-        @on_activate&.call(item)
-        emit(:activate, item)
+        fire_activate(item)
         item.activate
       end
 

@@ -17,7 +17,7 @@ module Potty
     class RadioGroup < Base
       include OptionList
 
-      attr_accessor :on_change
+      emits :change
 
       def initialize(app, options: [], selected: nil, on_change: nil)
         super(app)
@@ -54,8 +54,7 @@ module Potty
 
         @selected = value
         @cursor = idx
-        @on_change&.call(@selected)
-        emit(:change, @selected)
+        fire_change(@selected)
       end
 
       def preferred_height(_width)
@@ -102,8 +101,7 @@ module Potty
         return if opt[:value] == @selected
 
         @selected = opt[:value]
-        @on_change&.call(@selected)
-        emit(:change, @selected)
+        fire_change(@selected)
       end
     end
   end
