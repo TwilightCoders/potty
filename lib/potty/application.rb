@@ -57,6 +57,9 @@ module Potty
       @view_stack.last&.deactivate
       @view_stack.push(view)
       view.activate(self)
+      # The whole tree changed — force a full repaint so the new (possibly
+      # shorter) view can't leave fragments of the old one behind.
+      @surface&.force_repaint!
       refresh_all
     end
 
@@ -66,6 +69,7 @@ module Potty
       view = @view_stack.pop
       view.deactivate
       @view_stack.last&.activate(self)
+      @surface&.force_repaint!
       refresh_all
     end
 
@@ -97,6 +101,7 @@ module Potty
     def resume
       @surface&.start
       current_view&.activate(self)
+      @surface&.force_repaint!
       refresh_all
     end
 

@@ -19,6 +19,15 @@ module Potty
     # calls this, then re-lays-out the current view. No-op by default.
     def handle_resize; end
 
+    # Force the *next* frame to repaint everything, bypassing damage tracking.
+    # Per-frame #erase is normally damage-tracked (cheap, and it avoids
+    # strobing animation) — but on a view transition / resize the whole tree
+    # changes, and some back-ends (ncurses with wide / multi-byte glyphs) can
+    # fail to mark every changed cell, leaving ghost fragments. The Application
+    # calls this around push/pop/resume/resize so the next erase clears fully.
+    # No-op by default (e.g. InlineSurface already rewrites every row).
+    def force_repaint!; end
+
     # Frame lifecycle: erase the buffer, widgets draw, then present flushes.
     def erase
       raise NotImplementedError

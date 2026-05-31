@@ -20,6 +20,7 @@ module Potty
         @tick_interval = tick_interval
         @next_pair = 1
         @pairs = {}
+        @force_repaint = false
       end
 
       def start
@@ -49,13 +50,27 @@ module Potty
 
       def erase
         self.cursor_request = nil
-        stdscr.erase
+        # Normal frames use werase (damage-tracked, no strobe). A forced frame
+        # uses wclear (werase + clearok), which makes the next refresh repaint
+        # the whole screen — immune to ncurses failing to mark wide/multi-byte
+        # glyph cells as dirty (the ghost-fragment bug on view transitions).
+        if @force_repaint
+          stdscr.clear
+          @force_repaint = false
+        else
+          stdscr.erase
+        end
       end
 
       # ncurses delivered a KEY_RESIZE: stdscr has already been resized, so
       # just re-read the dimensions. The Application re-lays-out the view.
       def handle_resize
         @wm.update_dimensions
+      end
+
+      # Arm a full repaint for the next frame (see Surface#force_repaint!).
+      def force_repaint!
+        @force_repaint = true
       end
 
       def setpos(row, col)
