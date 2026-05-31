@@ -2,6 +2,7 @@
 
 require 'curses'
 require_relative 'base'
+require_relative 'option_list'
 require_relative '../keys'
 
 module Potty
@@ -10,6 +11,8 @@ module Potty
     # Space/Enter toggles the option under it. The RadioGroup sibling for
     # "choose any number". Emits :change(selected_values) on each toggle.
     class CheckboxGroup < Base
+      include OptionList
+
       attr_accessor :on_change
 
       def initialize(app, options: [], selected: [], on_change: nil)
@@ -22,10 +25,6 @@ module Potty
 
       def can_focus?
         true
-      end
-
-      def options
-        @options
       end
 
       # A snapshot of the selected values (safe to store).
@@ -88,22 +87,6 @@ module Potty
       end
 
       private
-
-      def normalize(opts)
-        (opts || []).map do |o|
-          if o.is_a?(Hash)
-            { value: o[:value], label: (o[:label] || o[:value]).to_s }
-          else
-            { value: o, label: o.to_s }
-          end
-        end
-      end
-
-      def move(delta)
-        return if @options.empty?
-
-        @cursor = (@cursor + delta) % @options.size
-      end
 
       def toggle(idx)
         opt = @options[idx]

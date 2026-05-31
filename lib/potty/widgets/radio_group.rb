@@ -2,6 +2,7 @@
 
 require 'curses'
 require_relative 'base'
+require_relative 'option_list'
 require_relative '../keys'
 
 module Potty
@@ -14,6 +15,8 @@ module Potty
     # arrows) and the *selection* (the committed value). They diverge while
     # the user is navigating and reconverge on select.
     class RadioGroup < Base
+      include OptionList
+
       attr_accessor :on_change
 
       def initialize(app, options: [], selected: nil, on_change: nil)
@@ -26,10 +29,6 @@ module Potty
 
       def can_focus?
         true
-      end
-
-      def options
-        @options
       end
 
       def options=(opts)
@@ -97,22 +96,6 @@ module Potty
 
       private
 
-      def normalize(opts)
-        (opts || []).map do |o|
-          if o.is_a?(Hash)
-            { value: o[:value], label: (o[:label] || o[:value]).to_s }
-          else
-            { value: o, label: o.to_s }
-          end
-        end
-      end
-
-      def move(delta)
-        return if @options.empty?
-
-        @cursor = (@cursor + delta) % @options.size
-      end
-
       def choose(idx)
         opt = @options[idx]
         return unless opt
@@ -121,10 +104,6 @@ module Potty
         @selected = opt[:value]
         @on_change&.call(@selected)
         emit(:change, @selected)
-      end
-
-      def index_of(value)
-        @options.index { |o| o[:value] == value }
       end
     end
   end
