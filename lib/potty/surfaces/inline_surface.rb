@@ -31,6 +31,10 @@ module Potty
         @cur_style = nil
         @primed = false
         @raw = false
+        # Rows the physical terminal cursor currently sits above the bottom
+        # of the region (0 = on the last row). Tracked so the next present can
+        # walk back to the top regardless of where realize_cursor left it.
+        @cursor_up = 0
         @decoder = (Input::Decoder.new if listen)
         @queue = []
         erase
@@ -47,17 +51,20 @@ module Potty
       end
 
       def finalize
-        present                 # freeze the final frame
+        self.cursor_request = nil
+        present                 # freeze the final frame (cursor hidden, at bottom)
         restore_cooked
-        # Explicit CR+LF: present leaves the cursor at the end of the last
-        # rendered row, and in raw mode \n alone is a bare line-feed (no
-        # column reset), which would indent whatever the host prints next.
+        @out.write("\e[0 q")    # reset cursor shape to the terminal default
+        # Explicit CR+LF: present leaves the cursor at column 0 of the last
+        # row, and in raw mode \n alone is a bare line-feed (no column reset),
+        # which would indent whatever the host prints next.
         @out.write("\r\n")      # drop below the region, at column 0
         @out.write("\e[?25h")   # restore cursor
         @out.flush
       end
 
       def erase
+        self.cursor_request = nil
         @cells = Array.new(@rows) { Array.new(@cols) { [' ', nil] } }
       end
 
@@ -88,16 +95,24 @@ module Potty
 
       def present
         if @primed
-          @out.write("\e[#{@rows - 1}A") if @rows > 1 # back to the top row
+          # Walk back to the top row from wherever the cursor was left last
+          # frame (realize_cursor may have parked it on an interior row).
+          up = (@rows - 1) - @cursor_up
+          @out.write("\e[#{up}A") if up.positive?
         else
           @primed = true
         end
+        @out.write("\r") # column 0 of the top row
 
         @rows.times do |i|
-          @out.write("\r\e[2K") # carriage return + clear line
+          @out.write("\e[2K") # clear the line (already at column 0)
           @out.write(render_row(@cells[i]))
-          @out.write("\n") unless i == @rows - 1
+          @out.write("\r")                      # back to column 0
+          @out.write("\n") unless i == @rows - 1 # down a row (raw LF keeps col 0)
         end
+        # Physical cursor is now at column 0 of the last row.
+        @cursor_up = 0
+        realize_cursor
         @out.flush
       end
 
@@ -119,6 +134,36 @@ module Potty
       end
 
       private
+
+      # Move the real cursor to the requested cell and show it in the wanted
+      # shape (DECSCUSR), or keep it hidden. Called at the end of present, when
+      # the physical cursor is at column 0 of the last row; records how many
+      # rows up it ends so the next present can return to the top.
+      def realize_cursor
+        unless cursor_request
+          @out.write("\e[?25l") # keep hidden
+          return
+        end
+
+        row, col, shape = cursor_request
+        up = (@rows - 1) - row
+        @out.write("\e[#{up}A") if up.positive?
+        @out.write("\e[#{col}C") if col.positive?
+        @out.write(decscusr(shape))
+        @out.write("\e[?25h") # show
+        @cursor_up = up
+      end
+
+      # DECSCUSR (CSI Ps SP q) cursor-shape select. Blinking variants read as
+      # an active text caret. 1 = block, 3 = underline, 5 = bar (default).
+      def decscusr(shape)
+        code = case shape
+               when :block then 1
+               when :underline then 3
+               else 5 # :bar
+               end
+        "\e[#{code} q"
+      end
 
       def enter_raw
         return unless @input.respond_to?(:raw!) && tty_input?

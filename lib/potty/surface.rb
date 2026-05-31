@@ -34,6 +34,17 @@ module Potty
       yield if block_given?
     end
 
+    # Request the hardware text cursor be shown at (row, col) with a shape
+    # (:bar / :block / :underline) when the frame is presented. A widget calls
+    # this from #render (e.g. TextInput at its caret); the request lives for
+    # one frame — #erase clears it, so a frame with no request hides the
+    # cursor. Last call wins, which is correct since only the focused widget
+    # asks. Shape control is honoured on surfaces that own the byte stream
+    # (InlineSurface, via DECSCUSR); CursesSurface falls back to visibility.
+    def place_cursor(row, col, shape: :bar)
+      @cursor_request = [row, col, shape]
+    end
+
     def present
       raise NotImplementedError
     end
@@ -42,5 +53,11 @@ module Potty
     def read_key
       nil
     end
+
+    protected
+
+    # The cursor request recorded this frame, or nil. Subclasses realize it
+    # during #present and reset it in #erase.
+    attr_accessor :cursor_request
   end
 end

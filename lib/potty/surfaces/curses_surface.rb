@@ -48,6 +48,7 @@ module Potty
       end
 
       def erase
+        self.cursor_request = nil
         stdscr.erase
       end
 
@@ -64,6 +65,7 @@ module Potty
       end
 
       def present
+        realize_cursor
         @wm.refresh_all
       end
 
@@ -72,6 +74,22 @@ module Potty
       end
 
       private
+
+      # Show the hardware cursor at the requested cell (set last by the
+      # drawing pass), or hide it. setpos must run after the widgets' draws so
+      # doupdate leaves the physical cursor there. Shape control is limited in
+      # curses (it doesn't expose DECSCUSR) — a :block uses the "very visible"
+      # mode, everything else the normal cursor; full shape control is an
+      # InlineSurface feature.
+      def realize_cursor
+        if cursor_request
+          row, col, shape = cursor_request
+          setpos(row, col)
+          ::Curses.curs_set(shape == :block ? 2 : 1)
+        else
+          ::Curses.curs_set(0)
+        end
+      end
 
       def stdscr
         @wm.stdscr

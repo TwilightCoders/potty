@@ -53,6 +53,63 @@ RSpec.describe Potty::Surfaces::InlineSurface do
     end
   end
 
+  describe 'hardware cursor (place_cursor + DECSCUSR)' do
+    it 'shows the cursor and selects its shape when a widget requests it' do
+      surface.erase
+      surface.place_cursor(0, 3, shape: :bar)
+      surface.present
+      s = out.string
+      expect(s).to include("\e[5 q")  # DECSCUSR: blinking bar
+      expect(s).to include("\e[?25h") # cursor shown
+    end
+
+    it 'maps shapes to DECSCUSR codes' do
+      { block: "\e[1 q", underline: "\e[3 q", bar: "\e[5 q" }.each do |shape, code|
+        out.truncate(0); out.rewind
+        surface.erase
+        surface.place_cursor(0, 0, shape: shape)
+        surface.present
+        expect(out.string).to include(code)
+      end
+    end
+
+    it 'hides the cursor on a frame with no request' do
+      surface.erase
+      surface.present
+      expect(out.string).to include("\e[?25l")
+    end
+
+    it 'drops the request after a frame (erase clears it)' do
+      surface.erase
+      surface.place_cursor(0, 2, shape: :bar)
+      surface.present
+      out.truncate(0); out.rewind
+      surface.erase   # next frame: no one asks
+      surface.present
+      expect(out.string).to include("\e[?25l") # hidden again
+      expect(out.string).not_to include("\e[5 q")
+    end
+
+    it 'parks the cursor on the requested interior row, then returns to top next frame' do
+      surface.erase
+      surface.place_cursor(0, 0, shape: :bar) # top row of a 2-line region
+      surface.present                          # leaves cursor 1 row up from bottom
+      out.truncate(0); out.rewind
+      surface.erase
+      surface.present
+      # Physical cursor was 1 above the bottom, so the walk-back is (rows-1 - 1) = 0:
+      # it must NOT emit an upward move from the wrong anchor.
+      expect(out.string).not_to include("\e[1A")
+    end
+
+    it 'resets the cursor shape to the terminal default on finalize' do
+      surface.start
+      out.truncate(0); out.rewind
+      surface.finalize
+      expect(out.string).to include("\e[0 q")
+    end
+  end
+
   describe 'styling' do
     it 'wraps styled text in ANSI SGR and resets' do
       surface.erase
