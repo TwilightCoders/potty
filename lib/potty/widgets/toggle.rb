@@ -33,6 +33,16 @@ module Potty
         fire_change(@value)
       end
 
+      # Set the value WITHOUT emitting :change — for a caller deriving this
+      # toggle's state from another control (e.g. a master toggle mirroring a
+      # checkbox group), where echoing the change back through on_change would
+      # bounce between the two sync handlers. Not toggle-specific reasoning:
+      # any derived/synchronized widget state wants a non-emitting write.
+      # Use `value=` when the change should behave like user input.
+      def replace_value(val)
+        @value = val ? true : false
+      end
+
       def toggle
         self.value = !@value
       end

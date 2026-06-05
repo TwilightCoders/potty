@@ -36,4 +36,21 @@ RSpec.describe Potty::Widgets::Toggle do
   it 'ignores unhandled keys' do
     expect(toggle.handle_key('x'.ord)).to be(false)
   end
+
+  describe '#replace_value (silent write for derived state)' do
+    it 'sets the value without emitting :change' do
+      seen = []
+      toggle.on_change = ->(v) { seen << v }
+      toggle.replace_value(true)
+      expect(toggle.value).to be(true)
+      expect(seen).to eq([])
+    end
+
+    it 'coerces truthiness like value=' do
+      toggle.replace_value('yes')
+      expect(toggle.value).to be(true)
+      toggle.replace_value(nil)
+      expect(toggle.value).to be(false)
+    end
+  end
 end
